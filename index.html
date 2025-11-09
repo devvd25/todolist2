@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Text 2</title>
+    <title>Quản lý Text</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -35,11 +35,11 @@
             font-weight: bold;
             text-align: center;
             margin-right: 10px;
-            font-size: 18px; /* Tăng kích thước phông chữ */
-            background-color: #e0f7fa; /* Màu nền xanh nhạt */
-            border-radius: 50%; /* Viền tròn */
-            padding: 5px; /* Khoảng đệm bên trong */
-            color: #007bff; /* Màu chữ xanh đậm */
+            font-size: 18px;
+            background-color: #e0f7fa;
+            border-radius: 50%;
+            padding: 5px;
+            color: #007bff;
         }
         .text-input {
             flex: 1;
@@ -272,6 +272,16 @@
     <div class="congratulations" id="congratulations">Chúc mừng! Bạn đã đạt 10 lần dán!</div>
 
     <script>
+        // Hàm để lấy khóa lưu trữ riêng biệt dựa trên đường dẫn URL
+        function getStorageKey() {
+            const path = window.location.pathname;
+            if (path.includes('todolist2')) {
+                return 'textManagerData_todolist2';
+            } else {
+                return 'textManagerData_todolist';
+            }
+        }
+
         let pasteCounts = []; // Mảng lưu số lần dán cho các hàng
         let copyCounts = []; // Mảng lưu số lần copy cho các hàng
         let timers = []; // Mảng lưu trạng thái đồng hồ: { timeLeft, intervalId, waitingForFocus }
@@ -488,12 +498,16 @@
                 uniqueLinks,
                 saveTimestamp: new Date().toISOString()
             };
-            localStorage.setItem('textManagerData', JSON.stringify(data));
-            console.log('Dữ liệu đã được lưu vào localStorage'); // Gỡ lỗi
+            
+            // Sử dụng khóa lưu trữ riêng biệt
+            const storageKey = getStorageKey();
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            console.log('Dữ liệu đã được lưu vào localStorage với khóa:', storageKey); // Gỡ lỗi
         }
 
         function clearDataIfNewDay() {
-            const savedData = localStorage.getItem('textManagerData');
+            const storageKey = getStorageKey();
+            const savedData = localStorage.getItem(storageKey);
             if (!savedData) return;
 
             const { saveTimestamp } = JSON.parse(savedData);
@@ -501,16 +515,17 @@
             const currentDate = new Date().toDateString();
 
             if (savedDate !== currentDate) {
-                localStorage.removeItem('textManagerData');
+                localStorage.removeItem(storageKey);
                 uniqueLinks = [];
                 updateTotalLinks();
-                console.log('Dữ liệu đã bị xóa vì sang ngày mới'); // Gỡ lỗi
+                console.log(`Dữ liệu đã bị xóa vì sang ngày mới cho khóa: ${storageKey}`); // Gỡ lỗi
             }
         }
 
         function loadData() {
             clearDataIfNewDay();
-            const savedData = localStorage.getItem('textManagerData');
+            const storageKey = getStorageKey();
+            const savedData = localStorage.getItem(storageKey);
             if (!savedData) {
                 // Khởi tạo 6 hàng mặc định
                 rowData = Array(6).fill().map(() => ({ text: '', note: '' }));
@@ -538,7 +553,7 @@
 
             renderRows();
             updateTotalPaste();
-            console.log('Dữ liệu đã được khôi phục từ localStorage'); // Gỡ lỗi
+            console.log(`Dữ liệu đã được khôi phục từ localStorage với khóa: ${storageKey}`); // Gỡ lỗi
         }
 
         async function pasteText(rowId) {
