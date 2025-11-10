@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Text 2</title>
+    <title>Quản lý Text</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -252,7 +252,7 @@
     </style>
 </head>
 <body>
-    <h1>Quản lý Text 2</h1>
+    <h1>Quản lý Text</h1>
     <div id="rows"></div>
     <button class="add-row-btn" onclick="addRow()">Thêm hàng</button>
     <div class="total-paste">Tổng số lần dán: 0</div>
@@ -366,57 +366,57 @@
         function updateCopyDisplay(rowId) {
             const row = document.querySelector(`.row[data-id="${rowId}"]`);
             const copyCountElement = row.querySelector('.copy-count');
-            copyCountElement.textContent = `Copy: ${copyCounts[rowId] || 0} lần`;
-            if (copyCounts[rowId] >= 5) {
+            copyCountElement.textContent = `Copy: ${copyCounts[rowId - 1] || 0} lần`;
+            if (copyCounts[rowId - 1] >= 5) {
                 copyCountElement.classList.add('highlight');
                 console.log(`Hàng ${rowId}: Đã thêm lớp highlight`); // Gỡ lỗi
             } else {
                 copyCountElement.classList.remove('highlight');
                 console.log(`Hàng ${rowId}: Đã xóa lớp highlight`); // Gỡ lỗi
             }
-            console.log(`Hàng ${rowId}: Số lần copy = ${copyCounts[rowId] || 0}`); // Gỡ lỗi
+            console.log(`Hàng ${rowId}: Số lần copy = ${copyCounts[rowId - 1] || 0}`); // Gỡ lỗi
         }
 
         function updateTimerDisplay(rowId) {
             const row = document.querySelector(`.row[data-id="${rowId}"]`);
             const timerElement = row.querySelector('.timer');
-            if (!timers[rowId]) {
+            if (!timers[rowId - 1]) {
                 timerElement.textContent = '';
                 timerElement.classList.remove('ready');
                 return;
             }
 
-            if (timers[rowId].timeLeft > 0) {
-                const minutes = Math.floor(timers[rowId].timeLeft / 60);
-                const seconds = timers[rowId].timeLeft % 60;
+            if (timers[rowId - 1].timeLeft > 0) {
+                const minutes = Math.floor(timers[rowId - 1].timeLeft / 60);
+                const seconds = timers[rowId - 1].timeLeft % 60;
                 timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
                 timerElement.classList.remove('ready');
             } else {
                 timerElement.textContent = 'Sẵn Sàng Tăng Like CMT';
                 timerElement.classList.add('ready');
-                clearInterval(timers[rowId].intervalId);
+                clearInterval(timers[rowId - 1].intervalId);
             }
         }
 
         function resetTimer(rowId) {
-            if (timers[rowId]) {
-                clearInterval(timers[rowId].intervalId);
-                timers[rowId] = null;
+            if (timers[rowId - 1]) {
+                clearInterval(timers[rowId - 1].intervalId);
+                timers[rowId - 1] = null;
                 updateTimerDisplay(rowId);
                 console.log(`Hàng ${rowId}: Đã xóa đồng hồ`); // Gỡ lỗi
             }
         }
 
         function startTimer(rowId) {
-            if (!timers[rowId]) return;
+            if (!timers[rowId - 1]) return;
 
-            timers[rowId].waitingForFocus = false;
-            timers[rowId].intervalId = setInterval(() => {
-                timers[rowId].timeLeft--;
+            timers[rowId - 1].waitingForFocus = false;
+            timers[rowId - 1].intervalId = setInterval(() => {
+                timers[rowId - 1].timeLeft--;
                 updateTimerDisplay(rowId);
                 saveData();
-                if (timers[rowId].timeLeft <= 0) {
-                    clearInterval(timers[rowId].intervalId);
+                if (timers[rowId - 1].timeLeft <= 0) {
+                    clearInterval(timers[rowId - 1].intervalId);
                 }
             }, 1000);
             console.log(`Hàng ${rowId}: Bắt đầu đếm ngược`); // Gỡ lỗi
@@ -438,8 +438,8 @@
                     <button class="button paste-btn" onclick="pasteText(${rowId})">Dán</button>
                     <button class="button copy-btn" onclick="copyText(${rowId})">Copy</button>
                     <button class="button delete-btn" onclick="deleteText(${rowId})">Delete</button>
-                    <span class="paste-count">Dán: ${pasteCounts[rowId] || 0} lần</span>
-                    <span class="copy-count">Copy: ${copyCounts[rowId] || 0} lần</span>
+                    <span class="paste-count">Dán: ${pasteCounts[rowId - 1] || 0} lần</span>
+                    <span class="copy-count">Copy: ${copyCounts[rowId - 1] || 0} lần</span>
                     <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, 1)">+</button>
                     <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, -1)">−</button>
                     <textarea class="note-input" placeholder="Ghi chú...">${data.note || ''}</textarea>
@@ -477,9 +477,9 @@
                 return;
             }
             rowData.splice(rowId - 1, 1);
-            pasteCounts.splice(rowId, 1);
-            copyCounts.splice(rowId, 1);
-            timers.splice(rowId, 1);
+            pasteCounts.splice(rowId - 1, 1);
+            copyCounts.splice(rowId - 1, 1);
+            timers.splice(rowId - 1, 1);
             renderRows();
             saveData();
             console.log(`Đã xóa hàng ${rowId}`); // Gỡ lỗi
@@ -527,11 +527,11 @@
             const storageKey = getStorageKey();
             const savedData = localStorage.getItem(storageKey);
             if (!savedData) {
-                // Khởi tạo 6 hàng mặc định
-                rowData = Array(6).fill().map(() => ({ text: '', note: '' }));
-                pasteCounts = Array(6).fill(0);
-                copyCounts = Array(6).fill(0);
-                timers = Array(6).fill(null);
+                // Khởi tạo 9 hàng mặc định
+                rowData = Array(9).fill().map(() => ({ text: '', note: '' }));
+                pasteCounts = Array(9).fill(0);
+                copyCounts = Array(9).fill(0);
+                timers = Array(9).fill(null);
                 renderRows();
                 return;
             }
@@ -563,7 +563,7 @@
                 const input = row.querySelector('.text-input');
                 input.value = text;
                 rowData[rowId - 1].text = text;
-                pasteCounts[rowId]++;
+                pasteCounts[rowId - 1]++;
                 
                 // Kiểm tra và thêm link vào uniqueLinks
                 if (isValidUrl(text)) {
@@ -578,24 +578,24 @@
                 }
 
                 // Cập nhật số lần copy khi dán
-                if (pasteCounts[rowId] > 1) {
-                    copyCounts[rowId] = 0; // Reset số lần copy nếu không phải lần dán đầu
+                if (pasteCounts[rowId - 1] > 1) {
+                    copyCounts[rowId - 1] = 0; // Reset số lần copy nếu không phải lần dán đầu
                 }
-                copyCounts[rowId]++; // Tăng số lần copy lên 1
+                copyCounts[rowId - 1]++; // Tăng số lần copy lên 1
                 
-                row.querySelector('.paste-count').textContent = `Dán: ${pasteCounts[rowId]} lần`;
+                row.querySelector('.paste-count').textContent = `Dán: ${pasteCounts[rowId - 1]} lần`;
                 updateCopyDisplay(rowId);
 
                 // Thiết lập đồng hồ đếm ngược
                 resetTimer(rowId);
-                timers[rowId] = {
+                timers[rowId - 1] = {
                     timeLeft: 180, // 3 phút
                     intervalId: null,
                     waitingForFocus: true
                 };
                 updateTimerDisplay(rowId);
                 
-                console.log(`Hàng ${rowId}: Số lần dán = ${pasteCounts[rowId]}, Số lần copy = ${copyCounts[rowId]}`); // Gỡ lỗi
+                console.log(`Hàng ${rowId}: Số lần dán = ${pasteCounts[rowId - 1]}, Số lần copy = ${copyCounts[rowId - 1]}`); // Gỡ lỗi
                 saveData();
                 updateTotalPaste();
             } catch (err) {
@@ -609,12 +609,12 @@
             const input = row.querySelector('.text-input');
             navigator.clipboard.writeText(input.value)
                 .then(() => {
-                    copyCounts[rowId]++;
+                    copyCounts[rowId - 1]++;
                     updateCopyDisplay(rowId);
 
                     // Thiết lập đồng hồ đếm ngược
                     resetTimer(rowId);
-                    timers[rowId] = {
+                    timers[rowId - 1] = {
                         timeLeft: 180, // 3 phút
                         intervalId: null,
                         waitingForFocus: true
@@ -630,7 +630,7 @@
         }
 
         function adjustCopyCount(rowId, change) {
-            copyCounts[rowId] = Math.max(0, (copyCounts[rowId] || 0) + change); // Không cho số lần copy âm
+            copyCounts[rowId - 1] = Math.max(0, (copyCounts[rowId - 1] || 0) + change); // Không cho số lần copy âm
             updateCopyDisplay(rowId);
             saveData();
         }
@@ -642,8 +642,8 @@
             input.value = '';
             noteInput.value = '';
             rowData[rowId - 1] = { text: '', note: '' };
-            pasteCounts[rowId] = 0;
-            copyCounts[rowId] = 0;
+            pasteCounts[rowId - 1] = 0;
+            copyCounts[rowId - 1] = 0;
             row.querySelector('.paste-count').textContent = `Dán: 0 lần`;
             resetTimer(rowId);
             updateCopyDisplay(rowId);
@@ -660,9 +660,9 @@
         // Phát hiện khi tab được focus để bắt đầu đếm ngược
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-                timers.forEach((timer, rowId) => {
+                timers.forEach((timer, index) => {
                     if (timer && timer.waitingForFocus && timer.timeLeft > 0) {
-                        startTimer(rowId);
+                        startTimer(index + 1);
                         saveData();
                     }
                 });
