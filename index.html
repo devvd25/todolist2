@@ -1,111 +1,868 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Sender — Agent 10-18</title>
-<style>
-  body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:#fafafa;color:#222}
-  h1{margin-bottom:14px}
-  .row{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #e6e6e6;border-radius:8px;background:#fff;margin-bottom:10px}
-  .timer{width:70px;text-align:center;color:#666;font-size:13px}
-  .row-number{width:34px;height:34px;border-radius:50%;background:#e9f6ff;color:#007bff;display:flex;align-items:center;justify-content:center;font-weight:700}
-  .text-input{flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .note-input{width:140px;padding:8px;border:1px solid #ddd;border-radius:6px;resize:none;height:36px}
-  .button{padding:7px 10px;border-radius:6px;border:none;color:#fff;cursor:pointer;font-size:13px}
-  .paste-btn{background:#28a745}
-  .send-btn{background:#17a2b8}
-  .copy-btn{background:#007bff}
-  .delete-btn{background:#dc3545}
-  .paste-count,.copy-count{font-weight:700;color:#444;margin-left:6px}
-  .copy-count.highlight{background:#ffc107;padding:4px 6px;border-radius:6px}
-  .agent-select{width:110px;padding:6px;border-radius:6px;border:1px solid #ddd;background:#fff}
-  .add-row-btn{margin-top:12px;padding:10px 16px;border-radius:6px;border:none;background:#28a745;color:#fff;cursor:pointer}
-  .sent-label{margin-left:8px;padding:6px 8px;border-radius:6px;background:#28a745;color:#fff;font-weight:600}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Quản lý Text 2 </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .timer {
+            width: 80px;
+            text-align: center;
+            margin-right: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+        .timer.ready {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .row-number {
+            width: 30px;
+            font-weight: bold;
+            text-align: center;
+            margin-right: 10px;
+            font-size: 18px;
+            background-color: #e0f7fa;
+            border-radius: 50%;
+            padding: 5px;
+            color: #007bff;
+        }
+        .text-input {
+            flex: 1;
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .note-input {
+            width: 150px;
+            height: 40px;
+            padding: 8px;
+            margin-left: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+        }
+        .button {
+            padding: 8px 12px;
+            margin-right: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+        .paste-btn {
+            background-color: #28a745;
+        }
+        .copy-btn {
+            background-color: #007bff;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+        }
+        .remove-row-btn {
+            background-color: #ff6b6b;
+            padding: 8px 12px;
+        }
+        .remove-row-btn:hover {
+            background-color: #e55a5a;
+        }
+        .paste-count, .copy-count {
+            margin-left: 10px;
+            font-weight: bold;
+            color: #555;
+            padding: 5px;
+            border-radius: 3px;
+            transition: background-color 0.3s;
+        }
+        .copy-count.highlight {
+            background-color: #ffc107 !important;
+        }
+        .copy-adjust-btn {
+            padding: 2px 8px;
+            margin-left: 5px;
+            font-size: 12px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .copy-adjust-btn:hover {
+            background-color: #5a6268;
+        }
+        .total-paste, .total-links {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .show-links-btn {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .show-links-btn:hover {
+            background-color: #0056b3;
+        }
+        .add-row-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .add-row-btn:hover {
+            background-color: #218838;
+        }
+        .links-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        .links-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .links-modal h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .links-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+        .links-list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .links-list li:last-child {
+            border-bottom: none;
+        }
+        .link-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            word-break: break-all;
+        }
+        .link-url {
+            flex: 1;
+        }
+        .link-timestamp {
+            width: 60px;
+            text-align: right;
+            margin-left: 10px;
+            color: #555;
+        }
+        .delete-link-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .delete-link-btn:hover {
+            background-color: #c82333;
+        }
+        .delete-all-links-btn, .close-modal-btn {
+            padding: 5px 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+        .delete-all-links-btn {
+            background-color: #dc3545;
+        }
+        .delete-all-links-btn:hover {
+            background-color: #c82333;
+        }
+        .close-modal-btn {
+            background-color: #6c757d;
+        }
+        .close-modal-btn:hover {
+            background-color: #5a6268;
+        }
+        .congratulations {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #28a745;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            font-size: 18px;
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
-  <h1>Sender — Agent 10 → 18</h1>
-  <div id="rows"></div>
-  <button class="add-row-btn" onclick="addRow()">Thêm hàng</button>
+    <h1> Quản lý Text 2 </h1>
+    <div id="rows"></div>
+    <button class="add-row-btn" onclick="addRow()">Thêm hàng</button>
+    <div class="total-paste">Tổng số lần dán: 0</div>
+    <div class="total-links">
+        Tổng số link duy nhất: 0
+        <button class="show-links-btn">Xem Links</button>
+    </div>
+    <div class="links-modal-overlay"></div>
+    <div class="links-modal">
+        <h2>Danh sách link đã lưu</h2>
+        <ul class="links-list"></ul>
+        <div>
+            <button class="delete-all-links-btn">Xóa tất cả</button>
+            <button class="close-modal-btn">Đóng</button>
+        </div>
+    </div>
+    <div class="congratulations" id="congratulations">Chúc mừng! Bạn đã đạt 10 lần dán!</div>
 
-<script>
-/* Standalone sender page for Agents 10..18 */
-const NGROK_URL = 'https://844aace9e015.ngrok-free.app/push'; // <-- đổi nếu cần (PHẢI HTTPS)
-const SECRET_TOKEN = 'MY_SECRET_TOKEN_ChangeMe'; // <-- đổi nếu cần
+    <script>
+        // Hàm để lấy khóa lưu trữ riêng biệt dựa trên đường dẫn URL
+        function getStorageKey() {
+            const path = window.location.pathname;
+            if (path.includes('todolist2')) {
+                return 'textManagerData_todolist2';
+            } else {
+                return 'textManagerData_todolist';
+            }
+        }
 
-const AGENT_MIN = 10, AGENT_MAX = 18, INITIAL_ROWS = 9;
-let rowData = [], pasteCounts = [], copyCounts = [], uniqueLinks = [];
+        let pasteCounts = []; // Mảng lưu số lần dán cho các hàng
+        let copyCounts = []; // Mảng lưu số lần copy cho các hàng
+        let timers = []; // Mảng lưu trạng thái đồng hồ: { timeLeft, intervalId, waitingForFocus }
+        let uniqueLinks = []; // Mảng lưu { url, timestamp }
+        let rowData = []; // Mảng lưu dữ liệu hàng: { text, note }
 
-function ensureInitial(){
-  if(rowData.length===0){
-    rowData = Array(INITIAL_ROWS).fill().map(()=>({text:'',note:''}));
-    pasteCounts = Array(INITIAL_ROWS).fill(0);
-    copyCounts = Array(INITIAL_ROWS).fill(0);
-    uniqueLinks = [];
-  }
-}
-function renderRows(){
-  const container = document.getElementById('rows'); container.innerHTML='';
-  rowData.forEach((d, idx) => {
-    const id = idx+1;
-    const div = document.createElement('div');
-    div.className='row'; div.setAttribute('data-id', id);
-    div.innerHTML = `
-      <div class="timer"></div>
-      <div class="row-number">${id}</div>
-      <input class="text-input" value="${(d.text||'').replace(/"/g,'&quot;')}" placeholder="Nhập link hoặc văn bản...">
-      <button class="button paste-btn" onclick="pasteText(${id})">Dán</button>
-      <button class="button send-btn" onclick="sendToNgrok(${id})">Gửi</button>
-      <button class="button copy-btn" onclick="copyText(${id})">Copy</button>
-      <button class="button delete-btn" onclick="deleteText(${id})">Delete</button>
-      <span class="paste-count">Dán: ${pasteCounts[idx]||0} lần</span>
-      <span class="copy-count ${copyCounts[idx]>=5?'highlight':''}">Copy: ${copyCounts[idx]||0} lần</span>
-      <select class="agent-select"></select>
-      <textarea class="note-input" placeholder="Ghi chú...">${d.note||''}</textarea>
-    `;
-    container.appendChild(div);
-    // populate agents 10..18
-    const sel = div.querySelector('.agent-select');
-    for(let a=AGENT_MIN; a<=AGENT_MAX; a++){
-      const o = document.createElement('option');
-      o.value = String(a);
-      o.textContent = 'Agent ' + a;
-      sel.appendChild(o);
-    }
-    // attach listeners
-    div.querySelector('.text-input').addEventListener('input', e=>{ rowData[idx].text = e.target.value; saveLocal(); });
-    div.querySelector('.note-input').addEventListener('input', e=>{ rowData[idx].note = e.target.value; saveLocal(); });
-  });
-}
+        function updateTotalPaste() {
+            const total = pasteCounts.reduce((sum, count) => sum + count, 0);
+            document.querySelector('.total-paste').textContent = `Tổng số lần dán: ${total}`;
+            const congratulations = document.getElementById('congratulations');
+            if (total === 10) {
+                congratulations.style.display = 'block';
+                setTimeout(() => {
+                    congratulations.style.display = 'none';
+                }, 3000); // Ẩn thông báo sau 3 giây
+            }
+        }
 
-function addRow(){ rowData.push({text:'',note:''}); pasteCounts.push(0); copyCounts.push(0); renderRows(); saveLocal(); }
-function pasteText(rowId){ navigator.clipboard.readText().then(txt=>{ rowData[rowId-1].text = txt; pasteCounts[rowId-1] = (pasteCounts[rowId-1]||0)+1; if(/^https?:\/\//i.test(txt.trim())){ if(!uniqueLinks.some(u=>u.url===txt.trim())) uniqueLinks.push({url:txt.trim(), timestamp:new Date().toISOString()}); } copyCounts[rowId-1] = (copyCounts[rowId-1]||0)+1; renderRows(); saveLocal(); }).catch(e=>alert('Không thể dán: '+e)); }
-function copyText(rowId){ const v = rowData[rowId-1].text||''; navigator.clipboard.writeText(v).then(()=>{ copyCounts[rowId-1] = (copyCounts[rowId-1]||0)+1; renderRows(); saveLocal(); }).catch(e=>alert('Lỗi copy: '+e)); }
-function deleteText(rowId){ rowData[rowId-1]={text:'',note:''}; pasteCounts[rowId-1]=0; copyCounts[rowId-1]=0; renderRows(); saveLocal(); }
+        function updateTotalLinks() {
+            document.querySelector('.total-links').firstChild.textContent = `Tổng số link duy nhất: ${uniqueLinks.length} `;
+        }
 
-function saveLocal(){ localStorage.setItem('sender_right_v1', JSON.stringify({rowData,pasteCounts,copyCounts,uniqueLinks,ts:new Date().toISOString()})); }
-function loadLocal(){ const raw = localStorage.getItem('sender_right_v1'); if(!raw) return; try{ const obj = JSON.parse(raw); if(obj.rowData){ rowData = obj.rowData; pasteCounts = obj.pasteCounts||[]; copyCounts = obj.copyCounts||[]; uniqueLinks = obj.uniqueLinks||[]; } }catch(e){console.warn(e);} }
+        function isValidUrl(string) {
+            const urlPattern = /^(https?:\/\/[^\s/$.?#].[^\s]*)$/i;
+            return urlPattern.test(string.trim());
+        }
 
-async function sendToNgrok(rowId){
-  const row = document.querySelector(`.row[data-id="${rowId}"]`);
-  if(!row) return alert('Không tìm thấy hàng');
-  const link = (row.querySelector('.text-input').value||'').trim();
-  const agentSel = row.querySelector('.agent-select');
-  const agent = agentSel ? agentSel.value : String(AGENT_MIN);
-  if(!link) return alert('Chưa có link để gửi');
-  try{
-    const payload = { token: SECRET_TOKEN, agent, link };
-    const resp = await fetch(NGROK_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    if(!resp.ok){ const t = await resp.text().catch(()=>null); alert('Gửi thất bại: '+resp.status + (t?(' '+t):'')); return; }
-    try{ await resp.json(); }catch(e){}
-    let lbl = row.querySelector('.sent-label'); if(!lbl){ lbl=document.createElement('span'); lbl.className='sent-label'; row.appendChild(lbl); }
-    lbl.textContent = `Đã gửi → Agent ${agent}`;
-    setTimeout(()=>lbl.remove(), 1500);
-  }catch(e){ alert('Lỗi gửi: '+e.message); }
-}
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
 
-ensureInitial(); loadLocal(); renderRows();
-</script>
+        function showLinksModal() {
+            const modal = document.querySelector('.links-modal');
+            const overlay = document.querySelector('.links-modal-overlay');
+            const linksList = document.querySelector('.links-list');
+            linksList.innerHTML = '';
+            
+            if (uniqueLinks.length === 0) {
+                linksList.innerHTML = '<li>Chưa có link nào được lưu.</li>';
+            } else {
+                uniqueLinks.forEach(linkObj => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="link-item">
+                            <span class="link-url">${linkObj.url}</span>
+                            <span class="link-timestamp">${formatTimestamp(linkObj.timestamp)}</span>
+                        </div>
+                        <button class="delete-link-btn" onclick="deleteLink('${linkObj.url.replace(/'/g, "\\'")}')">Xóa</button>
+                    `;
+                    linksList.appendChild(li);
+                });
+            }
+
+            modal.style.display = 'block';
+            overlay.style.display = 'block';
+        }
+
+        function deleteLink(url) {
+            uniqueLinks = uniqueLinks.filter(linkObj => linkObj.url !== url);
+            updateTotalLinks();
+            saveData();
+            showLinksModal(); // Cập nhật lại modal
+            console.log(`Đã xóa link: ${url}`); // Gỡ lỗi
+        }
+
+        function deleteAllLinks() {
+            uniqueLinks = [];
+            updateTotalLinks();
+            saveData();
+            showLinksModal(); // Cập nhật lại modal
+            console.log('Đã xóa tất cả link'); // Gỡ lỗi
+        }
+
+        function closeLinksModal() {
+            document.querySelector('.links-modal').style.display = 'none';
+            document.querySelector('.links-modal-overlay').style.display = 'none';
+        }
+
+        function updateCopyDisplay(rowId) {
+            const row = document.querySelector(`.row[data-id="${rowId}"]`);
+            const copyCountElement = row.querySelector('.copy-count');
+            copyCountElement.textContent = `Copy: ${copyCounts[rowId - 1] || 0} lần`;
+            if (copyCounts[rowId - 1] >= 5) {
+                copyCountElement.classList.add('highlight');
+                console.log(`Hàng ${rowId}: Đã thêm lớp highlight`); // Gỡ lỗi
+            } else {
+                copyCountElement.classList.remove('highlight');
+                console.log(`Hàng ${rowId}: Đã xóa lớp highlight`); // Gỡ lỗi
+            }
+            console.log(`Hàng ${rowId}: Số lần copy = ${copyCounts[rowId - 1] || 0}`); // Gỡ lỗi
+        }
+
+        function updateTimerDisplay(rowId) {
+            const row = document.querySelector(`.row[data-id="${rowId}"]`);
+            const timerElement = row.querySelector('.timer');
+            if (!timers[rowId - 1]) {
+                timerElement.textContent = '';
+                timerElement.classList.remove('ready');
+                return;
+            }
+
+            if (timers[rowId - 1].timeLeft > 0) {
+                const minutes = Math.floor(timers[rowId - 1].timeLeft / 60);
+                const seconds = timers[rowId - 1].timeLeft % 60;
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                timerElement.classList.remove('ready');
+            } else {
+                timerElement.textContent = 'Sẵn Sàng Tăng Like CMT';
+                timerElement.classList.add('ready');
+                clearInterval(timers[rowId - 1].intervalId);
+            }
+        }
+
+        function resetTimer(rowId) {
+            if (timers[rowId - 1]) {
+                clearInterval(timers[rowId - 1].intervalId);
+                timers[rowId - 1] = null;
+                updateTimerDisplay(rowId);
+                console.log(`Hàng ${rowId}: Đã xóa đồng hồ`); // Gỡ lỗi
+            }
+        }
+
+        function startTimer(rowId) {
+            if (!timers[rowId - 1]) return;
+
+            timers[rowId - 1].waitingForFocus = false;
+            timers[rowId - 1].intervalId = setInterval(() => {
+                timers[rowId - 1].timeLeft--;
+                updateTimerDisplay(rowId);
+                saveData();
+                if (timers[rowId - 1].timeLeft <= 0) {
+                    clearInterval(timers[rowId - 1].intervalId);
+                }
+            }, 1000);
+            console.log(`Hàng ${rowId}: Bắt đầu đếm ngược`); // Gỡ lỗi
+        }
+
+        function renderRows() {
+            const rowsContainer = document.getElementById('rows');
+            rowsContainer.innerHTML = '';
+            
+            rowData.forEach((data, index) => {
+                const rowId = index + 1;
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.setAttribute('data-id', rowId);
+                row.innerHTML = `
+                    <span class="timer"></span>
+                    <span class="row-number">${rowId}</span>
+                    <input type="text" class="text-input" placeholder="Nhập văn bản..." value="${data.text || ''}">
+                    <button class="button paste-btn" onclick="pasteText(${rowId})">Dán</button>
+                    <button class="button copy-btn" onclick="copyText(${rowId})">Copy</button>
+                    <button class="button delete-btn" onclick="deleteText(${rowId})">Delete</button>
+                    <span class="paste-count">Dán: ${pasteCounts[rowId - 1] || 0} lần</span>
+                    <span class="copy-count">Copy: ${copyCounts[rowId - 1] || 0} lần</span>
+                    <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, 1)">+</button>
+                    <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, -1)">−</button>
+                    <textarea class="note-input" placeholder="Ghi chú...">${data.note || ''}</textarea>
+                    <button class="button remove-row-btn" onclick="removeRow(${rowId})">Xóa</button>
+                `;
+                rowsContainer.appendChild(row);
+                updateCopyDisplay(rowId);
+                updateTimerDisplay(rowId);
+            });
+
+            // Gắn lại sự kiện input cho ô ghi chú
+            document.querySelectorAll('.note-input').forEach(textarea => {
+                textarea.addEventListener('input', () => {
+                    const row = textarea.closest('.row');
+                    const rowId = parseInt(row.getAttribute('data-id'));
+                    rowData[rowId - 1].note = textarea.value;
+                    saveData();
+                });
+            });
+        }
+
+        function addRow() {
+            rowData.push({ text: '', note: '' });
+            pasteCounts.push(0);
+            copyCounts.push(0);
+            timers.push(null);
+            renderRows();
+            saveData();
+            console.log('Đã thêm hàng mới'); // Gỡ lỗi
+        }
+
+        function removeRow(rowId) {
+            if (rowData.length <= 1) {
+                alert('Phải có ít nhất 1 hàng!');
+                return;
+            }
+            rowData.splice(rowId - 1, 1);
+            pasteCounts.splice(rowId - 1, 1);
+            copyCounts.splice(rowId - 1, 1);
+            timers.splice(rowId - 1, 1);
+            renderRows();
+            saveData();
+            console.log(`Đã xóa hàng ${rowId}`); // Gỡ lỗi
+        }
+
+        function saveData() {
+            const textInputs = rowData.map(data => data.text);
+            const noteInputs = rowData.map(data => data.note);
+            const savedTimers = timers.map(timer => timer ? { timeLeft: timer.timeLeft, waitingForFocus: timer.waitingForFocus } : null);
+            const data = {
+                textInputs,
+                noteInputs,
+                pasteCounts,
+                copyCounts,
+                timers: savedTimers,
+                uniqueLinks,
+                saveTimestamp: new Date().toISOString()
+            };
+            
+            // Sử dụng khóa lưu trữ riêng biệt
+            const storageKey = getStorageKey();
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            console.log('Dữ liệu đã được lưu vào localStorage với khóa:', storageKey); // Gỡ lỗi
+        }
+
+        function clearDataIfNewDay() {
+            const storageKey = getStorageKey();
+            const savedData = localStorage.getItem(storageKey);
+            if (!savedData) return;
+
+            const { saveTimestamp } = JSON.parse(savedData);
+            const savedDate = new Date(saveTimestamp).toDateString();
+            const currentDate = new Date().toDateString();
+
+            if (savedDate !== currentDate) {
+                localStorage.removeItem(storageKey);
+                uniqueLinks = [];
+                updateTotalLinks();
+                console.log(`Dữ liệu đã bị xóa vì sang ngày mới cho khóa: ${storageKey}`); // Gỡ lỗi
+            }
+        }
+
+        function loadData() {
+            clearDataIfNewDay();
+            const storageKey = getStorageKey();
+            const savedData = localStorage.getItem(storageKey);
+            if (!savedData) {
+                // Khởi tạo 9 hàng mặc định
+                rowData = Array(9).fill().map(() => ({ text: '', note: '' }));
+                pasteCounts = Array(9).fill(0);
+                copyCounts = Array(9).fill(0);
+                timers = Array(9).fill(null);
+                renderRows();
+                return;
+            }
+
+            const { textInputs, noteInputs, pasteCounts: savedPasteCounts, copyCounts: savedCopyCounts, timers: savedTimers, uniqueLinks: savedLinks } = JSON.parse(savedData);
+            
+            // Khôi phục dữ liệu hàng
+            rowData = textInputs.map((text, i) => ({
+                text: text || '',
+                note: noteInputs[i] || ''
+            }));
+            pasteCounts = savedPasteCounts || [];
+            copyCounts = savedCopyCounts || [];
+            timers = savedTimers || [];
+            
+            // Khôi phục danh sách link duy nhất
+            uniqueLinks = savedLinks || [];
+            updateTotalLinks();
+
+            renderRows();
+            updateTotalPaste();
+            console.log(`Dữ liệu đã được khôi phục từ localStorage với khóa: ${storageKey}`); // Gỡ lỗi
+        }
+
+        async function pasteText(rowId) {
+            try {
+                const text = await navigator.clipboard.readText();
+                const row = document.querySelector(`.row[data-id="${rowId}"]`);
+                const input = row.querySelector('.text-input');
+                input.value = text;
+                rowData[rowId - 1].text = text;
+                pasteCounts[rowId - 1]++;
+                
+                // Kiểm tra và thêm link vào uniqueLinks
+                if (isValidUrl(text)) {
+                    const trimmedUrl = text.trim();
+                    if (!uniqueLinks.some(linkObj => linkObj.url === trimmedUrl)) {
+                        uniqueLinks.push({
+                            url: trimmedUrl,
+                            timestamp: new Date().toISOString()
+                        });
+                        updateTotalLinks();
+                    }
+                }
+
+                // Cập nhật số lần copy khi dán
+                if (pasteCounts[rowId - 1] > 1) {
+                    copyCounts[rowId - 1] = 0; // Reset số lần copy nếu không phải lần dán đầu
+                }
+                copyCounts[rowId - 1]++; // Tăng số lần copy lên 1
+                
+                row.querySelector('.paste-count').textContent = `Dán: ${pasteCounts[rowId - 1]} lần`;
+                updateCopyDisplay(rowId);
+
+                // Thiết lập đồng hồ đếm ngược
+                resetTimer(rowId);
+                timers[rowId - 1] = {
+                    timeLeft: 180, // 3 phút
+                    intervalId: null,
+                    waitingForFocus: true
+                };
+                updateTimerDisplay(rowId);
+                
+                console.log(`Hàng ${rowId}: Số lần dán = ${pasteCounts[rowId - 1]}, Số lần copy = ${copyCounts[rowId - 1]}`); // Gỡ lỗi
+                saveData();
+                updateTotalPaste();
+            } catch (err) {
+                console.error('Lỗi khi dán:', err);
+                alert('Không thể dán văn bản. Vui lòng kiểm tra quyền truy cập clipboard hoặc chạy trên HTTPS/localhost.');
+            }
+        }
+
+        function copyText(rowId) {
+            const row = document.querySelector(`.row[data-id="${rowId}"]`);
+            const input = row.querySelector('.text-input');
+            navigator.clipboard.writeText(input.value)
+                .then(() => {
+                    copyCounts[rowId - 1]++;
+                    updateCopyDisplay(rowId);
+
+                    // Thiết lập đồng hồ đếm ngược
+                    resetTimer(rowId);
+                    timers[rowId - 1] = {
+                        timeLeft: 180, // 3 phút
+                        intervalId: null,
+                        waitingForFocus: true
+                    };
+                    updateTimerDisplay(rowId);
+
+                    saveData();
+                })
+                .catch(err => {
+                    console.error('Lỗi khi sao chép:', err);
+                    alert('Không thể sao chép văn bản.');
+                });
+        }
+
+        function adjustCopyCount(rowId, change) {
+            copyCounts[rowId - 1] = Math.max(0, (copyCounts[rowId - 1] || 0) + change); // Không cho số lần copy âm
+            updateCopyDisplay(rowId);
+            saveData();
+        }
+
+        function deleteText(rowId) {
+            const row = document.querySelector(`.row[data-id="${rowId}"]`);
+            const input = row.querySelector('.text-input');
+            const noteInput = row.querySelector('.note-input');
+            input.value = '';
+            noteInput.value = '';
+            rowData[rowId - 1] = { text: '', note: '' };
+            pasteCounts[rowId - 1] = 0;
+            copyCounts[rowId - 1] = 0;
+            row.querySelector('.paste-count').textContent = `Dán: 0 lần`;
+            resetTimer(rowId);
+            updateCopyDisplay(rowId);
+            console.log(`Hàng ${rowId}: Đã xóa lớp highlight, nội dung và đặt lại số lần copy`); // Gỡ lỗi
+            saveData();
+            updateTotalPaste();
+        }
+
+        // Thêm sự kiện cho các nút
+        document.querySelector('.show-links-btn').addEventListener('click', showLinksModal);
+        document.querySelector('.close-modal-btn').addEventListener('click', closeLinksModal);
+        document.querySelector('.delete-all-links-btn').addEventListener('click', deleteAllLinks);
+
+        // Phát hiện khi tab được focus để bắt đầu đếm ngược
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                timers.forEach((timer, index) => {
+                    if (timer && timer.waitingForFocus && timer.timeLeft > 0) {
+                        startTimer(index + 1);
+                        saveData();
+                    }
+                });
+            }
+        });
+
+        // Tải dữ liệu khi trang được mở
+        window.addEventListener('load', loadData);
+    </script>
+
+    <!-- ============================
+         PHẦN THÊM: API integration + nút Gửi + chọn Agent
+         Lưu ý: MÌNH CHỈ THÊM MÃ Ở DƯỚI (không sửa gì code cũ)
+         ============================ -->
+    <script>
+    (function(){
+      // Cấu hình ngrok / token (chỉnh theo môi trường của bạn)
+      const NGROK_URL = 'https://844aace9e015.ngrok-free.app/push'; // thay nếu khác
+      const SECRET_TOKEN = 'MY_SECRET_TOKEN_ChangeMe'; // đặt token bảo mật của bạn
+
+      // Tạo element <select> Agent với các option Agent 1..18
+      function createAgentSelect(selectedValue){
+        const sel = document.createElement('select');
+        sel.className = 'agent-select';
+        sel.style.marginLeft = '8px';
+        sel.style.padding = '6px';
+        sel.style.borderRadius = '4px';
+        sel.style.border = '1px solid #ddd';
+        sel.style.background = '#fff';
+        sel.style.fontSize = '13px';
+        for(let i=10;i<=18;i++){
+          const o = document.createElement('option');
+          o.value = String(i);
+          o.textContent = 'Agent ' + i;
+          if(String(i) === String(selectedValue)) o.selected = true;
+          sel.appendChild(o);
+        }
+        return sel;
+      }
+
+      // Tạo nút Gửi
+      function createSendButton(rowId){
+        const btn = document.createElement('button');
+        btn.className = 'button send-btn';
+        btn.textContent = 'Gửi';
+        btn.style.backgroundColor = '#17a2b8';
+        btn.style.marginLeft = '6px';
+        btn.addEventListener('click', function(e){
+          e.preventDefault();
+          sendToNgrok(rowId);
+        });
+        return btn;
+      }
+
+      // Hàm gửi đến backend qua ngrok
+      async function sendToNgrok(rowId){
+        try{
+          const row = document.querySelector(`.row[data-id="${rowId}"]`);
+          if(!row) return alert('Không tìm thấy hàng để gửi');
+          const input = row.querySelector('.text-input');
+          const agentSel = row.querySelector('.agent-select');
+          const link = (input && input.value) ? input.value.trim() : '';
+          const agent = agentSel ? agentSel.value : '1';
+
+          if(!link){
+            alert('Chưa có link để gửi');
+            return;
+          }
+
+          // Chuẩn bị payload (định dạng JSON)
+          const payload = {
+            token: SECRET_TOKEN,
+            agent: agent,
+            link: link
+          };
+
+          // Gửi request POST
+          const resp = await fetch(NGROK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if(!resp.ok){
+            const text = await resp.text().catch(()=>null);
+            console.error('Gửi thất bại', resp.status, text);
+            alert('Gửi thất bại: ' + resp.status + (text ? (' - ' + text) : ''));
+            return;
+          }
+
+          // Nếu backend trả JSON, try parse
+          let js;
+          try{ js = await resp.json(); }catch(e){ js = null; }
+          console.log('Gửi thành công, response=', js || '(no-json)');
+
+          // Thông báo ngắn cho user
+          // thay vì alert to, dùng update nhỏ: thêm text 'Đã gửi' tạm thời bên phải nút
+          showTemporarySentLabel(rowId, `Đã gửi tới Agent ${agent}`);
+        }catch(err){
+          console.error('Lỗi khi gửi đến ngrok:', err);
+          alert('Lỗi khi gửi: ' + err.message);
+        }
+      }
+
+      // Hiển thị nhãn nhỏ "Đã gửi" bên phải (tự ẩn sau 1.5s)
+      function showTemporarySentLabel(rowId, text){
+        const row = document.querySelector(`.row[data-id="${rowId}"]`);
+        if(!row) return;
+        let lbl = row.querySelector('.sent-label');
+        if(!lbl){
+          lbl = document.createElement('span');
+          lbl.className = 'sent-label';
+          lbl.style.marginLeft = '8px';
+          lbl.style.padding = '6px 8px';
+          lbl.style.borderRadius = '6px';
+          lbl.style.background = '#28a745';
+          lbl.style.color = '#fff';
+          lbl.style.fontSize = '13px';
+          lbl.style.fontWeight = '600';
+          row.appendChild(lbl);
+        }
+        lbl.textContent = text || 'Đã gửi';
+        lbl.style.opacity = '1';
+        setTimeout(()=>{ if(lbl) lbl.style.opacity = '0'; }, 1500);
+      }
+
+      // Chèn nút Gửi và ô chọn Agent cho mỗi hàng
+      function enhanceRows(){
+        const rows = document.querySelectorAll('.row');
+        rows.forEach(r => {
+          const id = parseInt(r.getAttribute('data-id'));
+          if(Number.isNaN(id)) return;
+
+          // Thêm nút Gửi nếu chưa có
+          if(!r.querySelector('.send-btn')){
+            // tìm nút paste để chèn sau nó
+            const pasteBtn = r.querySelector('.paste-btn');
+            if(pasteBtn){
+              const sendBtn = createSendButton(id);
+              pasteBtn.parentNode.insertBefore(sendBtn, pasteBtn.nextSibling);
+            } else {
+              // fallback: append vào sau input
+              const input = r.querySelector('.text-input');
+              if(input) input.parentNode.insertBefore(createSendButton(id), input.nextSibling);
+            }
+          }
+
+          // Thêm select agent nếu chưa có (chèn trước textarea.note-input)
+          if(!r.querySelector('.agent-select')){
+            const note = r.querySelector('.note-input');
+            const sel = createAgentSelect('1');
+            if(note){
+              note.parentNode.insertBefore(sel, note);
+            } else {
+              // fallback append to end
+              r.appendChild(sel);
+            }
+            // sync selection to rowData (add property agent)
+            sel.addEventListener('change', ()=> {
+              const ridx = id - 1;
+              if(!rowData[ridx]) rowData[ridx] = { text:'', note:'' };
+              rowData[ridx].agent = sel.value;
+              try{ saveData(); }catch(e){ /* ignore if not available */ }
+            });
+          }
+        });
+      }
+
+      // Use a MutationObserver to run enhanceRows() whenever #rows children change
+      const target = document.getElementById('rows');
+      if(target){
+        const mo = new MutationObserver(() => {
+          try{ enhanceRows(); }catch(e){ console.error(e); }
+        });
+        mo.observe(target, { childList: true, subtree: true });
+      }
+
+      // Also call enhanceRows periodically (safety)
+      window.addEventListener('load', ()=> {
+        try{ enhanceRows(); }catch(e){console.error(e);}
+        // attempt a few times in case original loadData renders later
+        setTimeout(enhanceRows, 300);
+        setTimeout(enhanceRows, 800);
+      });
+
+      // If addRow is defined, wrap it so after adding row we also enhance
+      if(window.addRow && typeof window.addRow === 'function'){
+        const originalAddRow = window.addRow;
+        window.addRow = function(...args){
+          const res = originalAddRow.apply(this, args);
+          setTimeout(enhanceRows, 50);
+          return res;
+        };
+      }
+
+      // Expose a function for debugging
+      window.__sendToNgrok = sendToNgrok;
+    })();
+    </script>
+    <!-- ============================ END ADDED BLOCK ============================ -->
+
 </body>
 </html>
