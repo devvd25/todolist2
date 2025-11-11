@@ -1,11 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Sender — Agent 10-18</title>
 <style>
-  /* style y hệt sender-left để giao diện giống nhau */
   body{font-family:Arial,Helvetica,sans-serif;margin:18px;background:#fafafa;color:#222}
   h1{margin-bottom:14px}
   .row{display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #e6e6e6;border-radius:8px;background:#fff;margin-bottom:10px}
@@ -31,21 +30,27 @@
   <button class="add-row-btn" onclick="addRow()">Thêm hàng</button>
 
 <script>
-/* copy of left page logic but agent range is 10..18 */
-const NGROK_URL = 'https://844aace9e015.ngrok-free.app/push'; // <-- thay bằng URL ngrok https của bạn
-const SECRET_TOKEN = 'MY_SECRET_TOKEN_ChangeMe';
-let rowData = [];
-let pasteCounts = [];
-let copyCounts = [];
-let timers = [];
-let uniqueLinks = [];
+/* Standalone sender page for Agents 10..18 */
+const NGROK_URL = 'https://844aace9e015.ngrok-free.app/push'; // <-- đổi nếu cần (PHẢI HTTPS)
+const SECRET_TOKEN = 'MY_SECRET_TOKEN_ChangeMe'; // <-- đổi nếu cần
 
-function ensureInitial(){ if(rowData.length===0){ rowData = Array(9).fill().map(()=>({text:'',note:''})); pasteCounts=Array(9).fill(0); copyCounts=Array(9).fill(0); timers=Array(9).fill(null);} }
+const AGENT_MIN = 10, AGENT_MAX = 18, INITIAL_ROWS = 9;
+let rowData = [], pasteCounts = [], copyCounts = [], uniqueLinks = [];
+
+function ensureInitial(){
+  if(rowData.length===0){
+    rowData = Array(INITIAL_ROWS).fill().map(()=>({text:'',note:''}));
+    pasteCounts = Array(INITIAL_ROWS).fill(0);
+    copyCounts = Array(INITIAL_ROWS).fill(0);
+    uniqueLinks = [];
+  }
+}
 function renderRows(){
-  const container=document.getElementById('rows'); container.innerHTML='';
-  rowData.forEach((d,idx)=>{
-    const id=idx+1;
-    const div=document.createElement('div'); div.className='row'; div.setAttribute('data-id',id);
+  const container = document.getElementById('rows'); container.innerHTML='';
+  rowData.forEach((d, idx) => {
+    const id = idx+1;
+    const div = document.createElement('div');
+    div.className='row'; div.setAttribute('data-id', id);
     div.innerHTML = `
       <div class="timer"></div>
       <div class="row-number">${id}</div>
@@ -60,44 +65,47 @@ function renderRows(){
       <textarea class="note-input" placeholder="Ghi chú...">${d.note||''}</textarea>
     `;
     container.appendChild(div);
-    // populate agent-select with Agents 10..18
+    // populate agents 10..18
     const sel = div.querySelector('.agent-select');
-    for(let a=10;a<=18;a++){ const o=document.createElement('option'); o.value=a; o.text='Agent '+a; sel.appendChild(o); }
+    for(let a=AGENT_MIN; a<=AGENT_MAX; a++){
+      const o = document.createElement('option');
+      o.value = String(a);
+      o.textContent = 'Agent ' + a;
+      sel.appendChild(o);
+    }
+    // attach listeners
     div.querySelector('.text-input').addEventListener('input', e=>{ rowData[idx].text = e.target.value; saveLocal(); });
     div.querySelector('.note-input').addEventListener('input', e=>{ rowData[idx].note = e.target.value; saveLocal(); });
   });
 }
-function addRow(){ rowData.push({text:'',note:''}); pasteCounts.push(0); copyCounts.push(0); timers.push(null); renderRows(); saveLocal(); }
-function getKey(){ return 'sender_right_v1'; }
-function saveLocal(){ localStorage.setItem(getKey(), JSON.stringify({rowData,pasteCounts,copyCounts,timers,uniqueLinks,ts:new Date().toISOString()})); }
-function loadLocal(){ const raw=localStorage.getItem(getKey()); if(!raw) return; try{ const obj=JSON.parse(raw); if(obj.rowData){ rowData = obj.rowData; pasteCounts = obj.pasteCounts||[]; copyCounts = obj.copyCounts||[]; timers = obj.timers||[]; uniqueLinks = obj.uniqueLinks||[]; } }catch(e){ console.warn(e); } }
 
-async function pasteText(rowId){ try{ const txt = await navigator.clipboard.readText(); rowData[rowId-1].text = txt; pasteCounts[rowId-1] = (pasteCounts[rowId-1]||0)+1; if(/^https?:\/\//i.test(txt.trim())){ if(!uniqueLinks.some(u=>u.url===txt.trim())) uniqueLinks.push({url:txt.trim(),timestamp:new Date().toISOString()}); } copyCounts[rowId-1] = (copyCounts[rowId-1]||0)+1; renderRows(); saveLocal(); }catch(e){ alert('Lỗi dán: '+e.message); } }
-function copyText(rowId){ const val = rowData[rowId-1].text || ''; navigator.clipboard.writeText(val).then(()=>{ copyCounts[rowId-1] = (copyCounts[rowId-1]||0)+1; renderRows(); saveLocal(); }).catch(e=>alert('Lỗi copy: '+e.message)); }
+function addRow(){ rowData.push({text:'',note:''}); pasteCounts.push(0); copyCounts.push(0); renderRows(); saveLocal(); }
+function pasteText(rowId){ navigator.clipboard.readText().then(txt=>{ rowData[rowId-1].text = txt; pasteCounts[rowId-1] = (pasteCounts[rowId-1]||0)+1; if(/^https?:\/\//i.test(txt.trim())){ if(!uniqueLinks.some(u=>u.url===txt.trim())) uniqueLinks.push({url:txt.trim(), timestamp:new Date().toISOString()}); } copyCounts[rowId-1] = (copyCounts[rowId-1]||0)+1; renderRows(); saveLocal(); }).catch(e=>alert('Không thể dán: '+e)); }
+function copyText(rowId){ const v = rowData[rowId-1].text||''; navigator.clipboard.writeText(v).then(()=>{ copyCounts[rowId-1] = (copyCounts[rowId-1]||0)+1; renderRows(); saveLocal(); }).catch(e=>alert('Lỗi copy: '+e)); }
 function deleteText(rowId){ rowData[rowId-1]={text:'',note:''}; pasteCounts[rowId-1]=0; copyCounts[rowId-1]=0; renderRows(); saveLocal(); }
 
-/* send */
+function saveLocal(){ localStorage.setItem('sender_right_v1', JSON.stringify({rowData,pasteCounts,copyCounts,uniqueLinks,ts:new Date().toISOString()})); }
+function loadLocal(){ const raw = localStorage.getItem('sender_right_v1'); if(!raw) return; try{ const obj = JSON.parse(raw); if(obj.rowData){ rowData = obj.rowData; pasteCounts = obj.pasteCounts||[]; copyCounts = obj.copyCounts||[]; uniqueLinks = obj.uniqueLinks||[]; } }catch(e){console.warn(e);} }
+
 async function sendToNgrok(rowId){
   const row = document.querySelector(`.row[data-id="${rowId}"]`);
-  if(!row) return alert('Hàng không tồn tại');
+  if(!row) return alert('Không tìm thấy hàng');
   const link = (row.querySelector('.text-input').value||'').trim();
   const agentSel = row.querySelector('.agent-select');
-  const agent = agentSel ? agentSel.value : '10';
+  const agent = agentSel ? agentSel.value : String(AGENT_MIN);
   if(!link) return alert('Chưa có link để gửi');
   try{
     const payload = { token: SECRET_TOKEN, agent, link };
     const resp = await fetch(NGROK_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    if(!resp.ok){ const t=await resp.text().catch(()=>null); alert('Gửi thất bại: '+resp.status + (t?(' '+t):'')); return; }
+    if(!resp.ok){ const t = await resp.text().catch(()=>null); alert('Gửi thất bại: '+resp.status + (t?(' '+t):'')); return; }
     try{ await resp.json(); }catch(e){}
     let lbl = row.querySelector('.sent-label'); if(!lbl){ lbl=document.createElement('span'); lbl.className='sent-label'; row.appendChild(lbl); }
-    lbl.textContent = `Đã gửi → Agent ${agent}`; setTimeout(()=>{ if(lbl) lbl.remove(); },1500);
+    lbl.textContent = `Đã gửi → Agent ${agent}`;
+    setTimeout(()=>lbl.remove(), 1500);
   }catch(e){ alert('Lỗi gửi: '+e.message); }
 }
 
-/* init */
-ensureInitial();
-loadLocal();
-renderRows();
+ensureInitial(); loadLocal(); renderRows();
 </script>
 </body>
 </html>
