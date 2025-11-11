@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Quản lý Text 2 </title>
+    <title>Quản lý Text</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -252,7 +252,7 @@
     </style>
 </head>
 <body>
-    <h1> Quản lý Text 2 </h1>
+    <h1>Quản lý Text</h1>
     <div id="rows"></div>
     <button class="add-row-btn" onclick="addRow()">Thêm hàng</button>
     <div class="total-paste">Tổng số lần dán: 0</div>
@@ -461,15 +461,16 @@
             });
         }
 
-        function addRow() {
-            rowData.push({ text: '', note: '' });
-            pasteCounts.push(0);
-            copyCounts.push(0);
-            timers.push(null);
-            renderRows();
-            saveData();
-            console.log('Đã thêm hàng mới'); // Gỡ lỗi
-        }
+     function addRow() {
+    rowData.push({ text: '', note: '', agent: '1' }); // <-- thêm agent mặc định
+    pasteCounts.push(0);
+    copyCounts.push(0);
+    timers.push(null);
+    renderRows();
+    saveData();
+    console.log('Đã thêm hàng mới'); // Gỡ lỗi
+}
+
 
         function removeRow(rowId) {
             if (rowData.length <= 1) {
@@ -486,24 +487,28 @@
         }
 
         function saveData() {
-            const textInputs = rowData.map(data => data.text);
-            const noteInputs = rowData.map(data => data.note);
-            const savedTimers = timers.map(timer => timer ? { timeLeft: timer.timeLeft, waitingForFocus: timer.waitingForFocus } : null);
-            const data = {
-                textInputs,
-                noteInputs,
-                pasteCounts,
-                copyCounts,
-                timers: savedTimers,
-                uniqueLinks,
-                saveTimestamp: new Date().toISOString()
-            };
-            
-            // Sử dụng khóa lưu trữ riêng biệt
-            const storageKey = getStorageKey();
-            localStorage.setItem(storageKey, JSON.stringify(data));
-            console.log('Dữ liệu đã được lưu vào localStorage với khóa:', storageKey); // Gỡ lỗi
-        }
+    const textInputs = rowData.map(data => data.text);
+    const noteInputs = rowData.map(data => data.note);
+    // NEW: agents array
+    const agentInputs = rowData.map(data => data.agent || '1');
+    const savedTimers = timers.map(timer => timer ? { timeLeft: timer.timeLeft, waitingForFocus: timer.waitingForFocus } : null);
+    const data = {
+        textInputs,
+        noteInputs,
+        agentInputs,        // ← lưu agent ở đây
+        pasteCounts,
+        copyCounts,
+        timers: savedTimers,
+        uniqueLinks,
+        saveTimestamp: new Date().toISOString()
+    };
+    
+    // Sử dụng khóa lưu trữ riêng biệt
+    const storageKey = getStorageKey();
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    console.log('Dữ liệu đã được lưu vào localStorage với khóa:', storageKey); // Gỡ lỗi
+}
+
 
         function clearDataIfNewDay() {
             const storageKey = getStorageKey();
@@ -526,23 +531,38 @@
             clearDataIfNewDay();
             const storageKey = getStorageKey();
             const savedData = localStorage.getItem(storageKey);
-            if (!savedData) {
-                // Khởi tạo 9 hàng mặc định
-                rowData = Array(9).fill().map(() => ({ text: '', note: '' }));
-                pasteCounts = Array(9).fill(0);
-                copyCounts = Array(9).fill(0);
-                timers = Array(9).fill(null);
-                renderRows();
-                return;
-            }
+           if (!savedData) {
+    // Khởi tạo 9 hàng mặc định (agent mặc định = '1')
+    rowData = Array(9).fill().map(() => ({ text: '', note: '', agent: '1' }));
+    pasteCounts = Array(9).fill(0);
+    copyCounts = Array(9).fill(0);
+    timers = Array(9).fill(null);
+    renderRows();
+    return;
+}
+
 
             const { textInputs, noteInputs, pasteCounts: savedPasteCounts, copyCounts: savedCopyCounts, timers: savedTimers, uniqueLinks: savedLinks } = JSON.parse(savedData);
             
-            // Khôi phục dữ liệu hàng
-            rowData = textInputs.map((text, i) => ({
-                text: text || '',
-                note: noteInputs[i] || ''
-            }));
+          // Khôi phục dữ liệu hàng (bao gồm agent nếu có)
+        rowData = textInputs.map((text, i) => ({
+            text: text || '',
+            note: (noteInputs && noteInputs[i]) ? noteInputs[i] : '',
+            agent: (Array.isArray(savedPasteCounts) && false) ? '1' : '' // placeholder (will be overridden below)
+        }));
+
+// Nếu server lưu agentInputs, gán vào rowData tương ứng
+if (Array.isArray(JSON.parse(savedData).agentInputs)) {
+    const parsed = JSON.parse(savedData);
+    const agentInputs = parsed.agentInputs || [];
+    rowData = textInputs.map((text, i) => ({
+        text: text || '',
+        note: (noteInputs && noteInputs[i]) ? noteInputs[i] : '',
+        agent: (agentInputs[i]) ? agentInputs[i] : '1'
+    }));
+}
+
+
             pasteCounts = savedPasteCounts || [];
             copyCounts = savedCopyCounts || [];
             timers = savedTimers || [];
@@ -680,7 +700,7 @@
     <script>
     (function(){
       // Cấu hình ngrok / token (chỉnh theo môi trường của bạn)
-      const NGROK_URL = 'd22caee43c54.ngrok-free.app/push'; // thay nếu khác
+      const NGROK_URL = 'https://d22caee43c54.ngrok-free.app/push'; // thay nếu khác
       const SECRET_TOKEN = 'MY_SECRET_TOKEN_ChangeMe'; // đặt token bảo mật của bạn
 
       // Tạo element <select> Agent với các option Agent 1..18
@@ -693,7 +713,7 @@
         sel.style.border = '1px solid #ddd';
         sel.style.background = '#fff';
         sel.style.fontSize = '13px';
-        for(let i=10;i<=18;i++){
+        for(let i=1;i<=18;i++){
           const o = document.createElement('option');
           o.value = String(i);
           o.textContent = 'Agent ' + i;
@@ -735,7 +755,7 @@
           // Chuẩn bị payload (định dạng JSON)
           const payload = {
             token: SECRET_TOKEN,
-            agent: agent,
+            targetAgent: agent,
             link: link
           };
 
@@ -767,27 +787,41 @@
         }
       }
 
-      // Hiển thị nhãn nhỏ "Đã gửi" bên phải (tự ẩn sau 1.5s)
-      function showTemporarySentLabel(rowId, text){
-        const row = document.querySelector(`.row[data-id="${rowId}"]`);
-        if(!row) return;
-        let lbl = row.querySelector('.sent-label');
-        if(!lbl){
-          lbl = document.createElement('span');
-          lbl.className = 'sent-label';
-          lbl.style.marginLeft = '8px';
-          lbl.style.padding = '6px 8px';
-          lbl.style.borderRadius = '6px';
-          lbl.style.background = '#28a745';
-          lbl.style.color = '#fff';
-          lbl.style.fontSize = '13px';
-          lbl.style.fontWeight = '600';
-          row.appendChild(lbl);
-        }
-        lbl.textContent = text || 'Đã gửi';
-        lbl.style.opacity = '1';
-        setTimeout(()=>{ if(lbl) lbl.style.opacity = '0'; }, 1500);
-      }
+      // Hiển thị trạng thái "Done" tạm thời trên nút Gửi (thay cho label popup)
+// Thao tác nhẹ: đổi text của nút .send-btn thành "Done" trong 1.5s rồi trả lại.
+// Và nếu có nhãn .sent-label còn sót sẽ bị xóa.
+// Hiển thị trạng thái "Done" tạm thời trên nút Gửi (đổi sang màu cam rồi trả lại)
+function showTemporarySentLabel(rowId, text){
+  const row = document.querySelector(`.row[data-id="${rowId}"]`);
+  if(!row) return;
+
+  // Nếu còn label xanh cũ thì xóa
+  const oldLbl = row.querySelector('.sent-label');
+  if(oldLbl) oldLbl.remove();
+
+  // Tìm nút Gửi
+  const btn = row.querySelector('.send-btn');
+  if(!btn) return;
+
+  const originalText = btn.textContent;
+  const originalBg = btn.style.backgroundColor;
+  const originalColor = btn.style.color;
+
+  // đổi text + đổi màu nút
+  btn.textContent = 'Done';
+  btn.disabled = true;
+  btn.style.backgroundColor = '#ff6a00';   // CAM (giống cảnh báo nhẹ nhàng)
+  btn.style.color = '#ffffff';
+
+  // hoàn nguyên sau 1.5s
+  setTimeout(() => {
+    btn.textContent = originalText;
+    btn.disabled = false;
+    btn.style.backgroundColor = originalBg;
+    btn.style.color = originalColor;
+  }, 1500);
+}
+
 
       // Chèn nút Gửi và ô chọn Agent cho mỗi hàng
       function enhanceRows(){
@@ -813,7 +847,10 @@
           // Thêm select agent nếu chưa có (chèn trước textarea.note-input)
           if(!r.querySelector('.agent-select')){
             const note = r.querySelector('.note-input');
-            const sel = createAgentSelect('1');
+            const ridx = id - 1;
+            const savedAgent = (rowData[ridx] && rowData[ridx].agent) ? rowData[ridx].agent : '1';
+            const sel = createAgentSelect(savedAgent);
+
             if(note){
               note.parentNode.insertBefore(sel, note);
             } else {
