@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Text</title>
+    <title> Quản lý Text 2 </title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -252,7 +252,7 @@
     </style>
 </head>
 <body>
-    <h1>Quản lý Text</h1>
+    <h1> Quản lý Text 2 </h1>
     <div id="rows"></div>
     <button class="add-row-btn" onclick="addRow()">Thêm hàng</button>
     <div class="total-paste">Tổng số lần dán: 0</div>
@@ -577,77 +577,82 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
         }
 
         async function pasteText(rowId) {
-            try {
-                const text = await navigator.clipboard.readText();
-                const row = document.querySelector(`.row[data-id="${rowId}"]`);
-                const input = row.querySelector('.text-input');
-                input.value = text;
-                rowData[rowId - 1].text = text;
-                pasteCounts[rowId - 1]++;
-                
-                // Kiểm tra và thêm link vào uniqueLinks
-                if (isValidUrl(text)) {
-                    const trimmedUrl = text.trim();
-                    if (!uniqueLinks.some(linkObj => linkObj.url === trimmedUrl)) {
-                        uniqueLinks.push({
-                            url: trimmedUrl,
-                            timestamp: new Date().toISOString()
-                        });
-                        updateTotalLinks();
-                    }
-                }
+    try {
+        const text = await navigator.clipboard.readText();
+        const row = document.querySelector(`.row[data-id="${rowId}"]`);
+        const input = row.querySelector('.text-input');
+        input.value = text;
+        rowData[rowId - 1].text = text;
+        // Chỉ tăng số lần dán thôi (không tăng copyCounts)
+        pasteCounts[rowId - 1]++;
+        
+        // KHÔNG tự thêm vào uniqueLinks ở đây (sẽ thêm khi bấm Copy hoặc Gửi)
+        // Nếu muốn vẫn hiển thị số lần dán:
+        row.querySelector('.paste-count').textContent = `Dán: ${pasteCounts[rowId - 1]} lần`;
+        updateCopyDisplay(rowId); // vẫn cập nhật giao diện copy badge nếu cần
 
-                // Cập nhật số lần copy khi dán
-                if (pasteCounts[rowId - 1] > 1) {
-                    copyCounts[rowId - 1] = 0; // Reset số lần copy nếu không phải lần dán đầu
-                }
-                copyCounts[rowId - 1]++; // Tăng số lần copy lên 1
-                
-                row.querySelector('.paste-count').textContent = `Dán: ${pasteCounts[rowId - 1]} lần`;
-                updateCopyDisplay(rowId);
-
-                // Thiết lập đồng hồ đếm ngược
-                resetTimer(rowId);
-                timers[rowId - 1] = {
-                    timeLeft: 180, // 3 phút
-                    intervalId: null,
-                    waitingForFocus: true
-                };
-                updateTimerDisplay(rowId);
-                
-                console.log(`Hàng ${rowId}: Số lần dán = ${pasteCounts[rowId - 1]}, Số lần copy = ${copyCounts[rowId - 1]}`); // Gỡ lỗi
-                saveData();
-                updateTotalPaste();
-            } catch (err) {
-                console.error('Lỗi khi dán:', err);
-                alert('Không thể dán văn bản. Vui lòng kiểm tra quyền truy cập clipboard hoặc chạy trên HTTPS/localhost.');
-            }
-        }
+        // Thiết lập đồng hồ đếm ngược
+        resetTimer(rowId);
+        timers[rowId - 1] = {
+            timeLeft: 180, // 3 phút
+            intervalId: null,
+            waitingForFocus: true
+        };
+        updateTimerDisplay(rowId);
+        
+        console.log(`Hàng ${rowId}: Số lần dán = ${pasteCounts[rowId - 1]}`); // Gỡ lỗi
+        saveData();
+        updateTotalPaste();
+    } catch (err) {
+        console.error('Lỗi khi dán:', err);
+        alert('Không thể dán văn bản. Vui lòng kiểm tra quyền truy cập clipboard hoặc chạy trên HTTPS/localhost.');
+    }
+}
 
         function copyText(rowId) {
-            const row = document.querySelector(`.row[data-id="${rowId}"]`);
-            const input = row.querySelector('.text-input');
-            navigator.clipboard.writeText(input.value)
-                .then(() => {
-                    copyCounts[rowId - 1]++;
-                    updateCopyDisplay(rowId);
+    const row = document.querySelector(`.row[data-id="${rowId}"]`);
+    const input = row.querySelector('.text-input');
+    const value = (input && input.value) ? input.value.trim() : '';
+    if (!value) {
+        alert('Không có nội dung để copy.');
+        return;
+    }
 
-                    // Thiết lập đồng hồ đếm ngược
-                    resetTimer(rowId);
-                    timers[rowId - 1] = {
-                        timeLeft: 180, // 3 phút
-                        intervalId: null,
-                        waitingForFocus: true
-                    };
-                    updateTimerDisplay(rowId);
+    navigator.clipboard.writeText(value)
+        .then(() => {
+            // Tăng số lần copy khi người dùng bấm Copy
+            copyCounts[rowId - 1] = (copyCounts[rowId - 1] || 0) + 1;
+            updateCopyDisplay(rowId);
 
-                    saveData();
-                })
-                .catch(err => {
-                    console.error('Lỗi khi sao chép:', err);
-                    alert('Không thể sao chép văn bản.');
-                });
-        }
+            // Nếu là link hợp lệ thì thêm vào uniqueLinks nếu chưa có
+            if (isValidUrl(value)) {
+                const trimmedUrl = value;
+                if (!uniqueLinks.some(linkObj => linkObj.url === trimmedUrl)) {
+                    uniqueLinks.push({
+                        url: trimmedUrl,
+                        timestamp: new Date().toISOString()
+                    });
+                    updateTotalLinks();
+                }
+            }
+
+            // Thiết lập đồng hồ đếm ngược
+            resetTimer(rowId);
+            timers[rowId - 1] = {
+                timeLeft: 180, // 3 phút
+                intervalId: null,
+                waitingForFocus: true
+            };
+            updateTimerDisplay(rowId);
+
+            saveData();
+        })
+        .catch(err => {
+            console.error('Lỗi khi sao chép:', err);
+            alert('Không thể sao chép văn bản.');
+        });
+}
+
 
         function adjustCopyCount(rowId, change) {
             copyCounts[rowId - 1] = Math.max(0, (copyCounts[rowId - 1] || 0) + change); // Không cho số lần copy âm
@@ -713,7 +718,7 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
         sel.style.border = '1px solid #ddd';
         sel.style.background = '#fff';
         sel.style.fontSize = '13px';
-        for(let i=1;i<=18;i++){
+        for(let i=10;i<=18;i++){
           const o = document.createElement('option');
           o.value = String(i);
           o.textContent = 'Agent ' + i;
@@ -738,54 +743,73 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
       }
 
       // Hàm gửi đến backend qua ngrok
-      async function sendToNgrok(rowId){
-        try{
-          const row = document.querySelector(`.row[data-id="${rowId}"]`);
-          if(!row) return alert('Không tìm thấy hàng để gửi');
-          const input = row.querySelector('.text-input');
-          const agentSel = row.querySelector('.agent-select');
-          const link = (input && input.value) ? input.value.trim() : '';
-          const agent = agentSel ? agentSel.value : '1';
+     async function sendToNgrok(rowId){
+  try{
+    const row = document.querySelector(`.row[data-id="${rowId}"]`);
+    if(!row) return alert('Không tìm thấy hàng để gửi');
+    const input = row.querySelector('.text-input');
+    const agentSel = row.querySelector('.agent-select');
+    const link = (input && input.value) ? input.value.trim() : '';
+    const agent = agentSel ? agentSel.value : '1';
 
-          if(!link){
-            alert('Chưa có link để gửi');
-            return;
-          }
+    if(!link){
+      alert('Chưa có link để gửi');
+      return;
+    }
 
-          // Chuẩn bị payload (định dạng JSON)
-          const payload = {
-            token: SECRET_TOKEN,
-            targetAgent: agent,
-            link: link
-          };
+    const payload = {
+      token: SECRET_TOKEN,
+      targetAgent: agent,
+      link: link
+    };
 
-          // Gửi request POST
-          const resp = await fetch(NGROK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
+    const resp = await fetch(NGROK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-          if(!resp.ok){
-            const text = await resp.text().catch(()=>null);
-            console.error('Gửi thất bại', resp.status, text);
-            alert('Gửi thất bại: ' + resp.status + (text ? (' - ' + text) : ''));
-            return;
-          }
+    // Nếu backend trả JSON, try parse
+    let js;
+    try{ js = await resp.json(); }catch(e){ js = null; }
+    console.log('Gửi thành công, response=', js || '(no-json)');
 
-          // Nếu backend trả JSON, try parse
-          let js;
-          try{ js = await resp.json(); }catch(e){ js = null; }
-          console.log('Gửi thành công, response=', js || '(no-json)');
+    if(!resp.ok){
+      // nếu backend trả lỗi dạng JSON, lấy error nếu có
+      const errMsg = (js && js.error) ? js.error : (js || 'Unknown error');
+      alert('Gửi thất bại ' + resp.status + ' - ' + errMsg);
+      return;
+    }
 
-          // Thông báo ngắn cho user
-          // thay vì alert to, dùng update nhỏ: thêm text 'Đã gửi' tạm thời bên phải nút
-          showTemporarySentLabel(rowId, `Đã gửi tới Agent ${agent}`);
-        }catch(err){
-          console.error('Lỗi khi gửi đến ngrok:', err);
-          alert('Lỗi khi gửi: ' + err.message);
-        }
+    // --- BỔ SUNG: Khi Gửi thành công, xem như hành động "copy/send" => tăng copyCounts và thêm link nếu hợp lệ
+    // Tăng số lần copy cho hàng này
+    copyCounts[rowId - 1] = (copyCounts[rowId - 1] || 0) + 1;
+    updateCopyDisplay(rowId);
+
+    // Nếu là link hợp lệ thì thêm vào uniqueLinks nếu chưa có
+    if (isValidUrl(link)) {
+      const trimmedUrl = link;
+      if (!uniqueLinks.some(linkObj => linkObj.url === trimmedUrl)) {
+        uniqueLinks.push({
+          url: trimmedUrl,
+          timestamp: new Date().toISOString()
+        });
+        updateTotalLinks();
       }
+    }
+
+    // Lưu trạng thái
+    saveData();
+
+    // Thay đổi trạng thái nút (Done) — dùng hàm đã có
+    showTemporarySentLabel(rowId, `Đã gửi tới Agent ${agent}`);
+  }catch(err){
+    console.error('Lỗi khi gửi đến ngrok:', err);
+    alert('Lỗi khi gửi: ' + (err && err.message ? err.message : err));
+  }
+}
+
+    
 
       // Hiển thị trạng thái "Done" tạm thời trên nút Gửi (thay cho label popup)
 // Thao tác nhẹ: đổi text của nút .send-btn thành "Done" trong 1.5s rồi trả lại.
