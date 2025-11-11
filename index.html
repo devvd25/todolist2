@@ -377,50 +377,52 @@
             console.log(`Hàng ${rowId}: Số lần copy = ${copyCounts[rowId - 1] || 0}`); // Gỡ lỗi
         }
 
-        function updateTimerDisplay(rowId) {
-            const row = document.querySelector(`.row[data-id="${rowId}"]`);
-            const timerElement = row.querySelector('.timer');
-            if (!timers[rowId - 1]) {
-                timerElement.textContent = '';
-                timerElement.classList.remove('ready');
-                return;
-            }
+       function updateTimerDisplay(rowId) {
+    const row = document.querySelector(`.row[data-id="${rowId}"]`);
+    const timerElement = row.querySelector('.timer');
+    if (!timers[rowId - 1]) {
+        timerElement.textContent = '';
+        timerElement.classList.remove('ready');
+        return;
+    }
 
-            if (timers[rowId - 1].timeLeft > 0) {
-                const minutes = Math.floor(timers[rowId - 1].timeLeft / 60);
-                const seconds = timers[rowId - 1].timeLeft % 60;
-                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                timerElement.classList.remove('ready');
-            } else {
-                timerElement.textContent = 'Sẵn Sàng Tăng Like CMT';
-                timerElement.classList.add('ready');
-                clearInterval(timers[rowId - 1].intervalId);
-            }
-        }
+    if (timers[rowId - 1].timeLeft > 0) {
+        const minutes = Math.floor(timers[rowId - 1].timeLeft / 60);
+        const seconds = timers[rowId - 1].timeLeft % 60;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        timerElement.classList.remove('ready');
+    } else {
+        timerElement.textContent = 'OK';
+        timerElement.classList.add('ready');
+        clearInterval(timers[rowId - 1].intervalId);
+        timers[rowId - 1] = null; // Đặt lại đồng hồ khi hết giờ
+    }
+}
 
         function resetTimer(rowId) {
-            if (timers[rowId - 1]) {
-                clearInterval(timers[rowId - 1].intervalId);
-                timers[rowId - 1] = null;
-                updateTimerDisplay(rowId);
-                console.log(`Hàng ${rowId}: Đã xóa đồng hồ`); // Gỡ lỗi
-            }
-        }
+    if (timers[rowId - 1]) {
+        clearInterval(timers[rowId - 1].intervalId);
+        timers[rowId - 1] = null;
+        updateTimerDisplay(rowId);
+        console.log(`Hàng ${rowId}: Đã xóa đồng hồ`);
+    }
+}
 
         function startTimer(rowId) {
-            if (!timers[rowId - 1]) return;
+    if (!timers[rowId - 1] || timers[rowId - 1].timeLeft <= 0) return;
 
-            timers[rowId - 1].waitingForFocus = false;
-            timers[rowId - 1].intervalId = setInterval(() => {
-                timers[rowId - 1].timeLeft--;
-                updateTimerDisplay(rowId);
-                saveData();
-                if (timers[rowId - 1].timeLeft <= 0) {
-                    clearInterval(timers[rowId - 1].intervalId);
-                }
-            }, 1000);
-            console.log(`Hàng ${rowId}: Bắt đầu đếm ngược`); // Gỡ lỗi
+    timers[rowId - 1].waitingForFocus = false;
+    timers[rowId - 1].intervalId = setInterval(() => {
+        timers[rowId - 1].timeLeft--;
+        updateTimerDisplay(rowId);
+        saveData();
+        if (timers[rowId - 1].timeLeft <= 0) {
+            clearInterval(timers[rowId - 1].intervalId);
+            timers[rowId - 1] = null; // Đặt lại đồng hồ khi hết giờ
         }
+    }, 1000);
+    console.log(`Hàng ${rowId}: Bắt đầu đếm ngược`);
+}
 
         function renderRows() {
             const rowsContainer = document.getElementById('rows');
@@ -682,17 +684,17 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
         document.querySelector('.close-modal-btn').addEventListener('click', closeLinksModal);
         document.querySelector('.delete-all-links-btn').addEventListener('click', deleteAllLinks);
 
-        // Phát hiện khi tab được focus để bắt đầu đếm ngược
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                timers.forEach((timer, index) => {
-                    if (timer && timer.waitingForFocus && timer.timeLeft > 0) {
-                        startTimer(index + 1);
-                        saveData();
-                    }
-                });
+       // Phát hiện khi tab được focus để bắt đầu đếm ngược
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        timers.forEach((timer, index) => {
+            if (timer && timer.waitingForFocus && timer.timeLeft > 0) {
+                startTimer(index + 1);
+                saveData();
             }
         });
+    }
+});
 
         // Tải dữ liệu khi trang được mở
         window.addEventListener('load', loadData);
@@ -718,7 +720,7 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
         sel.style.border = '1px solid #ddd';
         sel.style.background = '#fff';
         sel.style.fontSize = '13px';
-        for(let i=10;i<=18;i++){
+        for(let i=1;i<=9;i++){
           const o = document.createElement('option');
           o.value = String(i);
           o.textContent = 'Agent ' + i;
@@ -801,12 +803,20 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
     // Lưu trạng thái
     saveData();
 
-    // Thay đổi trạng thái nút (Done) — dùng hàm đã có
-    showTemporarySentLabel(rowId, `Đã gửi tới Agent ${agent}`);
-  }catch(err){
-    console.error('Lỗi khi gửi đến ngrok:', err);
-    alert('Lỗi khi gửi: ' + (err && err.message ? err.message : err));
-  }
+     // THÊM ĐOẠN NÀY ĐỂ KHỞI ĐỘNG ĐỒNG HỒ KHI GỬI
+        resetTimer(rowId);
+        timers[rowId - 1] = {
+            timeLeft: 180, // 3 phút
+            intervalId: null,
+            waitingForFocus: true
+        };
+        updateTimerDisplay(rowId);
+        
+        // Thay đổi trạng thái nút (Done)
+        showTemporarySentLabel(rowId, `Đã gửi tới Agent ${agent}`);
+    }catch(err){
+        // ... (code hiện tại) ...
+    }
 }
 
     
