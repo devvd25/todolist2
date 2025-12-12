@@ -1196,19 +1196,25 @@ function showTemporarySentLabel(rowId, text){
         const countEl = document.getElementById('agentCount');
         const listEl = document.getElementById('agentList');
         
+        // Lọc chỉ lấy agents từ 10-18 cho index2.html
+        const filteredAgents = agents.filter(agent => {
+          const num = parseInt(agent.agentNumber);
+          return num >= 10 && num <= 18;
+        });
+        
         if (countEl) {
           if (ws && ws.readyState === WebSocket.OPEN) {
-            countEl.textContent = `📡 ${agents.length} Agent đang kết nối`;
+            countEl.textContent = `📡 ${filteredAgents.length} Agent đang kết nối (10-18)`;
           } else {
             countEl.textContent = 'Chưa kết nối server';
           }
         }
 
         if (listEl) {
-          if (agents.length === 0) {
-            listEl.innerHTML = '<p style="text-align: center; opacity: 0.7;">Chưa có Agent nào kết nối. Hãy reload extension trong Chrome.</p>';
+          if (filteredAgents.length === 0) {
+            listEl.innerHTML = '<p style="text-align: center; opacity: 0.7;">Chưa có Agent nào kết nối (10-18). Hãy reload extension trong Chrome.</p>';
           } else {
-            listEl.innerHTML = agents.map(agent => `
+            listEl.innerHTML = filteredAgents.map(agent => `
               <div class="agent-card">
                 <div class="agent-card-header">
                   <span class="agent-number">Agent ${agent.agentNumber}</span>
