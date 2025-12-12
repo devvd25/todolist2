@@ -252,7 +252,145 @@
     </style>
 </head>
 <body>
-    <h1> Quản lý Text 2 </h1>
+    <h1> Quản lý Text 1 </h1>
+    
+    <!-- PHẦN ĐIỀU KHIỂN EXTENSION REFRESH VIA WEBSOCKET -->
+    <div id="extensionControl" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0; font-size: 18px;">🎮 Điều khiển Extension (18 Chrome)</h3>
+        <div id="wsConnectionStatus" style="display: flex; align-items: center; gap: 8px;">
+          <span id="wsStatusDot" style="width: 12px; height: 12px; border-radius: 50%; background: #ff5722;"></span>
+          <span id="wsStatusText" style="font-size: 12px;">Chưa kết nối</span>
+        </div>
+      </div>
+      
+      <!-- Server URL -->
+      <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+        <input type="text" id="wsServerUrl" value="ws://localhost:9999" placeholder="WebSocket Server URL" 
+               style="flex: 1; min-width: 200px; padding: 10px; border: none; border-radius: 6px; font-size: 14px;">
+        <button onclick="connectToServer()" class="ctrl-btn" style="background: #4CAF50;">🔗 Kết nối</button>
+        <button onclick="disconnectServer()" class="ctrl-btn" style="background: #f44336;">❌ Ngắt</button>
+      </div>
+
+      <!-- Quick Actions -->
+      <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+        <button onclick="refreshAllAgents()" class="ctrl-btn" style="background: #FF9800;">🔄 Refresh TẤT CẢ Agent</button>
+        <button onclick="toggleAgentList()" class="ctrl-btn" style="background: #2196F3;">📋 Xem Danh Sách Agent</button>
+      </div>
+
+      <!-- Connected Agents Count -->
+      <div id="agentCount" style="text-align: center; font-size: 14px; opacity: 0.9;">
+        Đang chờ kết nối...
+      </div>
+
+      <!-- Agent List -->
+      <div id="agentListContainer" style="display: none; margin-top: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; max-height: 400px; overflow-y: auto;">
+        <div id="agentList"></div>
+      </div>
+    </div>
+
+    <style>
+      .ctrl-btn {
+        padding: 10px 18px;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 13px;
+        transition: transform 0.1s, opacity 0.2s;
+      }
+      .ctrl-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+      .ctrl-btn:active {
+        transform: translateY(0);
+      }
+      .agent-card {
+        background: rgba(255,255,255,0.15);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .agent-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .agent-number {
+        font-size: 20px;
+        font-weight: bold;
+        background: rgba(255,255,255,0.2);
+        padding: 5px 12px;
+        border-radius: 20px;
+      }
+      .agent-status {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 10px;
+        background: #4CAF50;
+      }
+      .agent-tabs {
+        font-size: 12px;
+        opacity: 0.8;
+        margin-bottom: 8px;
+      }
+      .agent-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .agent-actions button {
+        padding: 6px 12px;
+        font-size: 11px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        transition: background 0.2s;
+      }
+      .agent-actions button:hover {
+        background: rgba(255,255,255,0.3);
+      }
+      .tab-list {
+        margin-top: 10px;
+        padding: 10px;
+        background: rgba(0,0,0,0.2);
+        border-radius: 6px;
+        font-size: 11px;
+        max-height: 150px;
+        overflow-y: auto;
+      }
+      .tab-item-ctrl {
+        display: flex;
+        align-items: center;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        gap: 8px;
+      }
+      .tab-item-ctrl:last-child {
+        border-bottom: none;
+      }
+      .tab-title-ctrl {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tab-refresh-small {
+        padding: 3px 8px;
+        font-size: 10px;
+        background: #4CAF50;
+        border: none;
+        border-radius: 3px;
+        color: white;
+        cursor: pointer;
+      }
+    </style>
+    
     <div id="rows"></div>
     <button class="add-row-btn" onclick="addRow()">Thêm hàng</button>
     <div class="total-paste">Tổng số lần dán: 0</div>
@@ -720,7 +858,7 @@ document.addEventListener('visibilitychange', () => {
         sel.style.border = '1px solid #ddd';
         sel.style.background = '#fff';
         sel.style.fontSize = '13px';
-        for(let i=10;i<=18;i++){
+        for(let i=1;i<=9;i++){
           const o = document.createElement('option');
           o.value = String(i);
           o.textContent = 'Agent ' + i;
@@ -934,6 +1072,234 @@ function showTemporarySentLabel(rowId, text){
     })();
     </script>
     <!-- ============================ END ADDED BLOCK ============================ -->
+
+    <!-- PHẦN ĐIỀU KHIỂN EXTENSION VIA WEBSOCKET -->
+    <script>
+    (function() {
+      let ws = null;
+      let agents = [];
+      let reconnectTimer = null;
+      let manualDisconnect = false;
+
+      // Update connection status
+      function updateStatus(connected, text) {
+        const dot = document.getElementById('wsStatusDot');
+        const statusText = document.getElementById('wsStatusText');
+        if (dot) dot.style.background = connected ? '#4CAF50' : '#ff5722';
+        if (statusText) statusText.textContent = text || (connected ? 'Đã kết nối' : 'Chưa kết nối');
+      }
+
+      // Connect to WebSocket server
+      window.connectToServer = function() {
+        const url = document.getElementById('wsServerUrl').value || 'ws://localhost:9999';
+        manualDisconnect = false;
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          console.log('Already connected');
+          return;
+        }
+        
+        if (ws) {
+          ws.close();
+          ws = null;
+        }
+
+        try {
+          console.log('Connecting to:', url);
+          ws = new WebSocket(url);
+          updateStatus(false, 'Đang kết nối...');
+
+          ws.onopen = () => {
+            console.log('WebSocket connected!');
+            updateStatus(true, 'Đã kết nối ✓');
+            // Đăng ký là manager
+            ws.send(JSON.stringify({ type: 'manager-register' }));
+            // Lưu URL
+            localStorage.setItem('ws_server_url', url);
+            // Clear reconnect timer
+            if (reconnectTimer) {
+              clearTimeout(reconnectTimer);
+              reconnectTimer = null;
+            }
+          };
+
+          ws.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              console.log('Received:', data.type, data);
+              handleServerMessage(data);
+            } catch (e) {
+              console.error('Message parse error:', e);
+            }
+          };
+
+          ws.onclose = (event) => {
+            console.log('WebSocket disconnected, code:', event.code);
+            updateStatus(false, 'Mất kết nối');
+            ws = null;
+            agents = [];
+            updateAgentDisplay();
+            
+            // Auto reconnect after 5s if not manual disconnect
+            if (!manualDisconnect && !reconnectTimer) {
+              reconnectTimer = setTimeout(() => {
+                reconnectTimer = null;
+                console.log('Auto reconnecting...');
+                connectToServer();
+              }, 5000);
+            }
+          };
+
+          ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            updateStatus(false, 'Lỗi kết nối');
+          };
+
+        } catch (e) {
+          console.error('Connect error:', e);
+          updateStatus(false, 'Lỗi: ' + e.message);
+        }
+      };
+
+      window.disconnectServer = function() {
+        manualDisconnect = true;
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+          reconnectTimer = null;
+        }
+        if (ws) {
+          ws.close();
+          ws = null;
+        }
+        agents = [];
+        updateAgentDisplay();
+        updateStatus(false, 'Đã ngắt kết nối');
+      };
+
+      function handleServerMessage(data) {
+        switch (data.type) {
+          case 'welcome':
+            console.log('Server welcome:', data.message);
+            break;
+          case 'client-list':
+            agents = data.extensions || [];
+            console.log('Received agents:', agents.length);
+            updateAgentDisplay();
+            break;
+          case 'pong':
+            console.log('Pong received');
+            break;
+        }
+      }
+
+      function updateAgentDisplay() {
+        const countEl = document.getElementById('agentCount');
+        const listEl = document.getElementById('agentList');
+        
+        if (countEl) {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            countEl.textContent = `📡 ${agents.length} Agent đang kết nối`;
+          } else {
+            countEl.textContent = 'Chưa kết nối server';
+          }
+        }
+
+        if (listEl) {
+          if (agents.length === 0) {
+            listEl.innerHTML = '<p style="text-align: center; opacity: 0.7;">Chưa có Agent nào kết nối. Hãy reload extension trong Chrome.</p>';
+          } else {
+            listEl.innerHTML = agents.map(agent => `
+              <div class="agent-card">
+                <div class="agent-card-header">
+                  <span class="agent-number">Agent ${agent.agentNumber}</span>
+                  <span class="agent-status">${agent.enabled ? '🟢 ON' : '🔴 OFF'}</span>
+                </div>
+                <div class="agent-tabs">📑 ${agent.tabs?.length || 0} tab đang mở</div>
+                <div class="agent-actions">
+                  <button onclick="refreshAgent('${agent.agentNumber}')">🔄 Refresh Active</button>
+                  <button onclick="refreshAllAgentTabs('${agent.agentNumber}')">🔄 Refresh All Tabs</button>
+                  <button onclick="toggleAgentTabs('${agent.agentNumber}')">📋 Xem Tab</button>
+                </div>
+                <div id="tabs-${agent.agentNumber}" class="tab-list" style="display: none;">
+                  ${(agent.tabs || []).map(tab => `
+                    <div class="tab-item-ctrl">
+                      <span class="tab-title-ctrl" title="${tab.url}">${tab.active ? '● ' : ''}${tab.title || tab.url}</span>
+                      <button class="tab-refresh-small" onclick="refreshAgentTab('${agent.agentNumber}', ${tab.id})">🔄</button>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+      }
+
+      window.toggleAgentList = function() {
+        const container = document.getElementById('agentListContainer');
+        if (container) {
+          container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        }
+      };
+
+      window.toggleAgentTabs = function(agentNumber) {
+        const tabsEl = document.getElementById('tabs-' + agentNumber);
+        if (tabsEl) {
+          tabsEl.style.display = tabsEl.style.display === 'none' ? 'block' : 'none';
+        }
+      };
+
+      // Send command to server
+      function sendCommand(type, data = {}) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          const msg = { type, ...data };
+          console.log('Sending command:', msg);
+          ws.send(JSON.stringify(msg));
+          return true;
+        } else {
+          alert('Chưa kết nối server! Hãy bấm "Kết nối" trước.');
+          return false;
+        }
+      }
+
+      // Refresh active tab of specific agent
+      window.refreshAgent = function(agentNumber) {
+        console.log('Refreshing agent:', agentNumber);
+        sendCommand('refresh-active', { agentNumber: String(agentNumber) });
+      };
+
+      // Refresh all tabs of specific agent
+      window.refreshAllAgentTabs = function(agentNumber) {
+        sendCommand('refresh-all-agent', { agentNumber: String(agentNumber) });
+      };
+
+      // Refresh specific tab of agent
+      window.refreshAgentTab = function(agentNumber, tabId) {
+        sendCommand('refresh-tab', { agentNumber: String(agentNumber), tabId });
+      };
+
+      // Refresh all agents
+      window.refreshAllAgents = function() {
+        if (agents.length === 0) {
+          alert('Chưa có Agent nào kết nối!');
+          return;
+        }
+        if (confirm('Refresh tab đang active của TẤT CẢ ' + agents.length + ' agent?')) {
+          sendCommand('refresh-all');
+        }
+      };
+
+      // Auto connect on page load
+      window.addEventListener('load', () => {
+        const savedUrl = localStorage.getItem('ws_server_url');
+        if (savedUrl) {
+          document.getElementById('wsServerUrl').value = savedUrl;
+        }
+        // Auto connect after 500ms
+        setTimeout(connectToServer, 500);
+      });
+
+    })();
+    </script>
 
 </body>
 </html>
