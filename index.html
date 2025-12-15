@@ -252,7 +252,7 @@
     </style>
 </head>
 <body>
-    <h1> Quản lý Text 2 </h1>
+    <h1> Quản lý Text 1 </h1>
     
     <!-- PHẦN ĐIỀU KHIỂN EXTENSION REFRESH VIA WEBSOCKET -->
     <div id="extensionControl" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
@@ -602,7 +602,7 @@
         }
 
      function addRow() {
-    rowData.push({ text: '', note: '', agent: '1' }); // <-- thêm agent mặc định
+    rowData.push({ text: '', note: '', agent: '10' }); // <-- thêm agent mặc định (10-18)
     pasteCounts.push(0);
     copyCounts.push(0);
     timers.push(null);
@@ -630,7 +630,7 @@
     const textInputs = rowData.map(data => data.text);
     const noteInputs = rowData.map(data => data.note);
     // NEW: agents array
-    const agentInputs = rowData.map(data => data.agent || '1');
+    const agentInputs = rowData.map(data => data.agent || '10');
     const savedTimers = timers.map(timer => timer ? { timeLeft: timer.timeLeft, waitingForFocus: timer.waitingForFocus } : null);
     const data = {
         textInputs,
@@ -672,8 +672,8 @@
             const storageKey = getStorageKey();
             const savedData = localStorage.getItem(storageKey);
            if (!savedData) {
-    // Khởi tạo 9 hàng mặc định (agent mặc định = '1')
-    rowData = Array(9).fill().map(() => ({ text: '', note: '', agent: '1' }));
+    // Khởi tạo 9 hàng mặc định (agent mặc định = '10')
+    rowData = Array(9).fill().map(() => ({ text: '', note: '', agent: '10' }));
     pasteCounts = Array(9).fill(0);
     copyCounts = Array(9).fill(0);
     timers = Array(9).fill(null);
@@ -688,7 +688,7 @@
         rowData = textInputs.map((text, i) => ({
             text: text || '',
             note: (noteInputs && noteInputs[i]) ? noteInputs[i] : '',
-            agent: (Array.isArray(savedPasteCounts) && false) ? '1' : '' // placeholder (will be overridden below)
+            agent: (Array.isArray(savedPasteCounts) && false) ? '10' : '' // placeholder (will be overridden below)
         }));
 
 // Nếu server lưu agentInputs, gán vào rowData tương ứng
@@ -698,7 +698,7 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
     rowData = textInputs.map((text, i) => ({
         text: text || '',
         note: (noteInputs && noteInputs[i]) ? noteInputs[i] : '',
-        agent: (agentInputs[i]) ? agentInputs[i] : '1'
+        agent: (agentInputs[i]) ? agentInputs[i] : '10'
     }));
 }
 
@@ -848,7 +848,7 @@ document.addEventListener('visibilitychange', () => {
       const NGROK_URL = 'https://88cd45df5a87.ngrok-free.app/push'; // thay nếu khác
       const SECRET_TOKEN = 'MY_SECRET_TOKEN_ChangeMe'; // đặt token bảo mật của bạn
 
-      // Tạo element <select> Agent với các option Agent 1..18
+      // Tạo element <select> Agent với các option Agent 10..18 (INDEX2)
       function createAgentSelect(selectedValue){
         const sel = document.createElement('select');
         sel.className = 'agent-select';
