@@ -1078,6 +1078,7 @@ function showTemporarySentLabel(rowId, text){
     (function() {
       let ws = null;
       let agents = [];
+      let filteredAgents = []; // agents đã lọc theo range
       let reconnectTimer = null;
       let manualDisconnect = false;
 
@@ -1197,7 +1198,7 @@ function showTemporarySentLabel(rowId, text){
         const listEl = document.getElementById('agentList');
         
         // Lọc chỉ lấy agents từ 10-18 cho index2.html
-        const filteredAgents = agents.filter(agent => {
+        filteredAgents = agents.filter(agent => {
           const num = parseInt(agent.agentNumber);
           return num >= 10 && num <= 18;
         });
@@ -1283,14 +1284,17 @@ function showTemporarySentLabel(rowId, text){
         sendCommand('refresh-tab', { agentNumber: String(agentNumber), tabId });
       };
 
-      // Refresh all agents
+      // Refresh all agents (chỉ 10-18)
       window.refreshAllAgents = function() {
-        if (agents.length === 0) {
-          alert('Chưa có Agent nào kết nối!');
+        if (filteredAgents.length === 0) {
+          alert('Chưa có Agent nào kết nối (10-18)!');
           return;
         }
-        if (confirm('Refresh tab đang active của TẤT CẢ ' + agents.length + ' agent?')) {
-          sendCommand('refresh-all');
+        if (confirm('Refresh tab đang active của ' + filteredAgents.length + ' agent (10-18)?')) {
+          // Gửi lệnh refresh cho từng agent đã lọc
+          filteredAgents.forEach(agent => {
+            sendCommand('refresh-active', { agentNumber: String(agent.agentNumber) });
+          });
         }
       };
 
