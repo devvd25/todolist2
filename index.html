@@ -929,7 +929,7 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
 
         // Khới tạo WebSocket cho target user sync
         function initTargetUserSync() {
-            const WS_URL = 'wss://8754ee725c49.ngrok-free.app/'; // Dùng chung với Agent System
+            const WS_URL = 'wss://a74dab69b33c.ngrok-free.app/'; // Dùng chung với Agent System
             try {
                 window.nreerWS = new WebSocket(WS_URL);
                 window.nreerWS.onopen = () => {
@@ -1090,7 +1090,7 @@ document.addEventListener('visibilitychange', () => {
     <script>
     (function(){
       // Cấu hình ngrok / token (chỉnh theo môi trường của bạn)
-      const NGROK_URL = 'https://8754ee725c49.ngrok-free.app/push'; // thay nếu khác
+      const NGROK_URL = 'https://a74dab69b33c.ngrok-free.app/push'; // thay nếu khác
       const SECRET_TOKEN = 'MY_SECRET_TOKEN_ChangeMe'; // đặt token bảo mật của bạn
 
       // Tạo element <select> Agent với các option Agent 10..18 (INDEX2)
