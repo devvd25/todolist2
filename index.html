@@ -985,6 +985,12 @@ document.addEventListener('visibilitychange', () => {
             const state = autoSendState[rowId - 1];
             if (!state.enabled || state.count >= 4) {
                 if (state.count >= 4) {
+                    // Clear countdown interval nếu còn chạy
+                    if (state.countdownId) {
+                        clearInterval(state.countdownId);
+                        state.countdownId = null;
+                    }
+                    hideAutoCountdown(rowId);
                     showAutoCompleteBadge(rowId);
                     state.count = 0;
                     state.enabled = false;
