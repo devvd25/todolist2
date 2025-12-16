@@ -249,6 +249,57 @@
             font-size: 18px;
             z-index: 1000;
         }
+        .auto-toggle {
+            margin-left: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .auto-toggle.active {
+            background-color: #28a745;
+        }
+        .auto-toggle:hover {
+            opacity: 0.8;
+        }
+        .auto-countdown {
+            display: none;
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #17a2b8;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .auto-complete-badge {
+            display: none;
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .send-btn-container {
+            position: relative;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -425,6 +476,7 @@
         let timers = []; // Mảng lưu trạng thái đồng hồ: { timeLeft, intervalId, waitingForFocus }
         let uniqueLinks = []; // Mảng lưu { url, timestamp }
         let rowData = []; // Mảng lưu dữ liệu hàng: { text, note }
+        let autoSendState = []; // Mảng lưu trạng thái auto-send: { enabled, count, timerId, countdownId }
 
         function updateTotalPaste() {
             const total = pasteCounts.reduce((sum, count) => sum + count, 0);
@@ -606,6 +658,7 @@
     pasteCounts.push(0);
     copyCounts.push(0);
     timers.push(null);
+    autoSendState.push({ enabled: false, count: 0, timerId: null, countdownId: null });
     renderRows();
     saveData();
     console.log('Đã thêm hàng mới'); // Gỡ lỗi
@@ -617,10 +670,15 @@
                 alert('Phải có ít nhất 1 hàng!');
                 return;
             }
+            // Clear auto-send timers before removing
+            if (autoSendState[rowId - 1]) {
+                clearAutoSendTimers(rowId);
+            }
             rowData.splice(rowId - 1, 1);
             pasteCounts.splice(rowId - 1, 1);
             copyCounts.splice(rowId - 1, 1);
             timers.splice(rowId - 1, 1);
+            autoSendState.splice(rowId - 1, 1);
             renderRows();
             saveData();
             console.log(`Đã xóa hàng ${rowId}`); // Gỡ lỗi
@@ -632,6 +690,7 @@
     // NEW: agents array
     const agentInputs = rowData.map(data => data.agent || '10');
     const savedTimers = timers.map(timer => timer ? { timeLeft: timer.timeLeft, waitingForFocus: timer.waitingForFocus } : null);
+    const savedAutoSend = autoSendState.map(state => state ? { enabled: state.enabled, count: state.count } : { enabled: false, count: 0 });
     const data = {
         textInputs,
         noteInputs,
@@ -639,6 +698,7 @@
         pasteCounts,
         copyCounts,
         timers: savedTimers,
+        autoSendState: savedAutoSend,
         uniqueLinks,
         saveTimestamp: new Date().toISOString()
     };
@@ -677,6 +737,7 @@
     pasteCounts = Array(9).fill(0);
     copyCounts = Array(9).fill(0);
     timers = Array(9).fill(null);
+    autoSendState = Array(9).fill().map(() => ({ enabled: false, count: 0, timerId: null, countdownId: null }));
     renderRows();
     return;
 }
@@ -707,6 +768,19 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
             copyCounts = savedCopyCounts || [];
             timers = savedTimers || [];
             
+            // Khôi phục autoSendState
+            const parsed = JSON.parse(savedData);
+            if (parsed.autoSendState && Array.isArray(parsed.autoSendState)) {
+                autoSendState = parsed.autoSendState.map(state => ({
+                    enabled: state?.enabled || false,
+                    count: state?.count || 0,
+                    timerId: null,
+                    countdownId: null
+                }));
+            } else {
+                autoSendState = Array(rowData.length).fill().map(() => ({ enabled: false, count: 0, timerId: null, countdownId: null }));
+            }
+            
             // Khôi phục danh sách link duy nhất
             uniqueLinks = savedLinks || [];
             updateTotalLinks();
@@ -734,7 +808,7 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
         // Thiết lập đồng hồ đếm ngược
         resetTimer(rowId);
         timers[rowId - 1] = {
-            timeLeft: 180, // 3 phút
+            timeLeft: 215, // 3 phút 35 giây
             intervalId: null,
             waitingForFocus: true
         };
@@ -779,7 +853,7 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
             // Thiết lập đồng hồ đếm ngược
             resetTimer(rowId);
             timers[rowId - 1] = {
-                timeLeft: 180, // 3 phút
+                timeLeft: 215, // 3 phút 35 giây
                 intervalId: null,
                 waitingForFocus: true
             };
@@ -836,6 +910,120 @@ document.addEventListener('visibilitychange', () => {
 
         // Tải dữ liệu khi trang được mở
         window.addEventListener('load', loadData);
+
+        // ===== AUTO-SEND FUNCTIONS =====
+        function toggleAutoSend(rowId) {
+            const state = autoSendState[rowId - 1];
+            state.enabled = !state.enabled;
+            
+            const toggle = document.querySelector(`.row[data-id="${rowId}"] .auto-toggle`);
+            if (toggle) {
+                if (state.enabled) {
+                    toggle.classList.add('active');
+                    toggle.title = 'Auto ON (sẽ gửi lại 4 lần sau mỗi 3 phút)';
+                } else {
+                    toggle.classList.remove('active');
+                    toggle.title = 'Auto OFF';
+                    clearAutoSendTimers(rowId);
+                    hideAutoCountdown(rowId);
+                    hideAutoCompleteBadge(rowId);
+                }
+            }
+            saveData();
+            console.log(`Hàng ${rowId}: Auto-send ${state.enabled ? 'BẬT' : 'TẮT'}`);
+        }
+
+        function clearAutoSendTimers(rowId) {
+            const state = autoSendState[rowId - 1];
+            if (state.timerId) {
+                clearTimeout(state.timerId);
+                state.timerId = null;
+            }
+            if (state.countdownId) {
+                clearInterval(state.countdownId);
+                state.countdownId = null;
+            }
+            state.count = 0;
+        }
+
+        function showAutoCountdown(rowId, secondsLeft) {
+            const countdown = document.querySelector(`.row[data-id="${rowId}"] .auto-countdown`);
+            if (countdown) {
+                const minutes = Math.floor(secondsLeft / 60);
+                const seconds = secondsLeft % 60;
+                countdown.textContent = `Auto: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                countdown.style.display = 'block';
+            }
+        }
+
+        function hideAutoCountdown(rowId) {
+            const countdown = document.querySelector(`.row[data-id="${rowId}"] .auto-countdown`);
+            if (countdown) {
+                countdown.style.display = 'none';
+            }
+        }
+
+        function showAutoCompleteBadge(rowId) {
+            const badge = document.querySelector(`.row[data-id="${rowId}"] .auto-complete-badge`);
+            if (badge) {
+                badge.textContent = '✓ Hoàn thành Auto (5/5)';
+                badge.style.display = 'block';
+                setTimeout(() => {
+                    badge.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function hideAutoCompleteBadge(rowId) {
+            const badge = document.querySelector(`.row[data-id="${rowId}"] .auto-complete-badge`);
+            if (badge) {
+                badge.style.display = 'none';
+            }
+        }
+
+        function scheduleAutoSend(rowId) {
+            const state = autoSendState[rowId - 1];
+            if (!state.enabled || state.count >= 4) {
+                if (state.count >= 4) {
+                    showAutoCompleteBadge(rowId);
+                    state.count = 0;
+                    state.enabled = false;
+                    const toggle = document.querySelector(`.row[data-id="${rowId}"] .auto-toggle`);
+                    if (toggle) toggle.classList.remove('active');
+                    saveData();
+                }
+                return;
+            }
+
+            let secondsLeft = 215; // 3 phút 35 giây
+            showAutoCountdown(rowId, secondsLeft);
+
+            // Countdown interval
+            state.countdownId = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft > 0) {
+                    showAutoCountdown(rowId, secondsLeft);
+                } else {
+                    clearInterval(state.countdownId);
+                    state.countdownId = null;
+                }
+            }, 1000);
+
+            // Schedule next send
+            state.timerId = setTimeout(() => {
+                state.count++;
+                console.log(`Auto-send hàng ${rowId}: lần ${state.count}/4`);
+                hideAutoCountdown(rowId);
+                
+                // Trigger send
+                if (window.__sendToNgrok) {
+                    window.__sendToNgrok(rowId);
+                }
+                
+                // Schedule next if needed
+                scheduleAutoSend(rowId);
+            }, 215000); // 3 phút 35 giây = 215000ms
+        }
     </script>
 
     <!-- ============================
@@ -944,7 +1132,7 @@ document.addEventListener('visibilitychange', () => {
      // THÊM ĐOẠN NÀY ĐỂ KHỞI ĐỘNG ĐỒNG HỒ KHI GỬI
         resetTimer(rowId);
         timers[rowId - 1] = {
-            timeLeft: 180, // 3 phút
+            timeLeft: 215, // 3 phút 35 giây
             intervalId: null,
             waitingForFocus: true
         };
@@ -952,8 +1140,15 @@ document.addEventListener('visibilitychange', () => {
         
         // Thay đổi trạng thái nút (Done)
         showTemporarySentLabel(rowId, `Đã gửi tới Agent ${agent}`);
+        
+        // Trigger auto-send nếu được bật
+        const autoState = autoSendState[rowId - 1];
+        if (autoState && autoState.enabled && autoState.count === 0) {
+            scheduleAutoSend(rowId);
+        }
     }catch(err){
-        // ... (code hiện tại) ...
+        console.error('Lỗi khi gửi:', err);
+        alert('Lỗi: ' + err.message);
     }
 }
 
@@ -1002,17 +1197,70 @@ function showTemporarySentLabel(rowId, text){
           const id = parseInt(r.getAttribute('data-id'));
           if(Number.isNaN(id)) return;
 
-          // Thêm nút Gửi nếu chưa có
-          if(!r.querySelector('.send-btn')){
-            // tìm nút paste để chèn sau nó
+          // Thêm nút Gửi với container nếu chưa có
+          if(!r.querySelector('.send-btn-container')){
             const pasteBtn = r.querySelector('.paste-btn');
             if(pasteBtn){
+              // Tạo container
+              const container = document.createElement('div');
+              container.className = 'send-btn-container';
+              
+              // Tạo nút Gửi
               const sendBtn = createSendButton(id);
-              pasteBtn.parentNode.insertBefore(sendBtn, pasteBtn.nextSibling);
-            } else {
-              // fallback: append vào sau input
-              const input = r.querySelector('.text-input');
-              if(input) input.parentNode.insertBefore(createSendButton(id), input.nextSibling);
+              container.appendChild(sendBtn);
+              
+              // Tạo auto countdown (ẩn ban đầu)
+              const countdown = document.createElement('div');
+              countdown.className = 'auto-countdown';
+              countdown.setAttribute('data-row', id);
+              container.appendChild(countdown);
+              
+              // Tạo auto complete badge (ẩn ban đầu)
+              const badge = document.createElement('div');
+              badge.className = 'auto-complete-badge';
+              badge.setAttribute('data-row', id);
+              container.appendChild(badge);
+              
+              pasteBtn.parentNode.insertBefore(container, pasteBtn.nextSibling);
+            }
+          } else {
+            // Nếu container đã có, đảm bảo chỉ có 1 countdown và 1 badge
+            const container = r.querySelector('.send-btn-container');
+            if(container){
+              // Xóa các countdown/badge duplicate
+              const countdowns = container.querySelectorAll('.auto-countdown');
+              if(countdowns.length > 1){
+                for(let i = 1; i < countdowns.length; i++){
+                  countdowns[i].remove();
+                }
+              }
+              const badges = container.querySelectorAll('.auto-complete-badge');
+              if(badges.length > 1){
+                for(let i = 1; i < badges.length; i++){
+                  badges[i].remove();
+                }
+              }
+            }
+          }
+          
+          // Thêm auto toggle nếu chưa có
+          if(!r.querySelector('.auto-toggle')){
+            const container = r.querySelector('.send-btn-container');
+            if(container){
+              const toggle = document.createElement('button');
+              toggle.className = 'auto-toggle';
+              toggle.innerHTML = '⚙️';
+              toggle.title = 'Auto OFF';
+              const ridx = id - 1;
+              if(autoSendState[ridx] && autoSendState[ridx].enabled){
+                toggle.classList.add('active');
+                toggle.title = 'Auto ON (sẽ gửi lại 4 lần sau mỗi 3 phút)';
+              }
+              toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAutoSend(id);
+              });
+              container.parentNode.insertBefore(toggle, container.nextSibling);
             }
           }
 
@@ -1020,7 +1268,7 @@ function showTemporarySentLabel(rowId, text){
           if(!r.querySelector('.agent-select')){
             const note = r.querySelector('.note-input');
             const ridx = id - 1;
-            const savedAgent = (rowData[ridx] && rowData[ridx].agent) ? rowData[ridx].agent : '1';
+            const savedAgent = (rowData[ridx] && rowData[ridx].agent) ? rowData[ridx].agent : '10';
             const sel = createAgentSelect(savedAgent);
 
             if(note){
