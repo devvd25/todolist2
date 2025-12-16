@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 1000px;
+            max-width: 1150px;
             margin: 20px auto;
             padding: 0 10px;
         }
@@ -48,19 +48,14 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        .target-select {
-            width: 180px;
+        .note-input {
+            width: 150px;
+            height: 40px;
             padding: 8px;
             margin-left: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            background-color: white;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        .target-select:focus {
-            outline: 2px solid #667eea;
-            border-color: #667eea;
+            resize: none;
         }
         .button {
             padding: 8px 12px;
@@ -639,20 +634,7 @@
                     <span class="copy-count">Copy: ${copyCounts[rowId - 1] || 0} lần</span>
                     <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, 1)">+</button>
                     <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, -1)">−</button>
-                    <select class="target-select" onchange="updateTargetUser(${rowId}, this.value)">
-                        <option value="">-- Chọn Target User --</option>
-                        <option value="@shinchan13_09">@shinchan13_09</option>
-                        <option value="@hao3107_3">@hao3107_3</option>
-                        <option value="@chickenguy000">@chickenguy000</option>
-                        <option value="@jolibedethuong">@jolibedethuong</option>
-                        <option value="@vitdethuongcute">@vitdethuongcute</option>
-                        <option value="@aff2draqylg">@aff2draqylg</option>
-                        <option value="@trumnapro9k">@trumnapro9k</option>
-                        <option value="@begaocutehihi">@begaocutehihi</option>
-                        <option value="@bebongrevieww">@bebongrevieww</option>
-                        <option value="@bemeowdethuongg">@bemeowdethuongg</option>
-                        <option value="@becuarevieww">@becuarevieww</option>
-                    </select>
+                    <textarea class="note-input" placeholder="Nhập user...">${data.note || ''}</textarea>
                     <button class="button remove-row-btn" onclick="removeRow(${rowId})">Xóa</button>
                 `;
                 rowsContainer.appendChild(row);
@@ -660,18 +642,19 @@
                 updateTimerDisplay(rowId);
             });
 
-            // Gắn lại giá trị đã lưu cho target select
-            document.querySelectorAll('.target-select').forEach(select => {
-                const row = select.closest('.row');
-                const rowId = parseInt(row.getAttribute('data-id'));
-                if (rowData[rowId - 1].targetUser) {
-                    select.value = rowData[rowId - 1].targetUser;
-                }
+            // Gắn lại sự kiện input cho ô nhập user
+            document.querySelectorAll('.note-input').forEach(textarea => {
+                textarea.addEventListener('input', () => {
+                    const row = textarea.closest('.row');
+                    const rowId = parseInt(row.getAttribute('data-id'));
+                    rowData[rowId - 1].note = textarea.value;
+                    saveData();
+                });
             });
         }
 
-        function addRow() {
-    rowData.push({ text: '', targetUser: '', agent: '10' }); // <-- thêm agent mặc định (10-18)
+     function addRow() {
+    rowData.push({ text: '', note: '', agent: '10' }); // <-- thêm agent mặc định (10-18)
     pasteCounts.push(0);
     copyCounts.push(0);
     timers.push(null);
@@ -750,7 +733,7 @@
             const savedData = localStorage.getItem(storageKey);
            if (!savedData) {
     // Khởi tạo 9 hàng mặc định (agent mặc định = '10')
-    rowData = Array(9).fill().map(() => ({ text: '', targetUser: '', agent: '10' }));
+    rowData = Array(9).fill().map(() => ({ text: '', note: '', agent: '10' }));
     pasteCounts = Array(9).fill(0);
     copyCounts = Array(9).fill(0);
     timers = Array(9).fill(null);
@@ -891,32 +874,13 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
             saveData();
         }
 
-        function updateTargetUser(rowId, username) {
-            rowData[rowId - 1].targetUser = username;
-            saveData();
-            
-            // Sync sang Auto NR script qua WebSocket
-            if (username && window.nreerWS && window.nreerWS.readyState === WebSocket.OPEN) {
-                const agentNumber = rowData[rowId - 1].agent || '10';
-                window.nreerWS.send(JSON.stringify({
-                    type: 'target-user-update',
-                    username: username,
-                    targetAgent: agentNumber,
-                    source: 'index2'
-                }));
-                console.log(`🟢 Hàng ${rowId}: Chọn target user: ${username} cho Agent ${agentNumber} (sent via WebSocket)`);
-            } else {
-                console.log(`⚠️ Hàng ${rowId}: Chọn ${username} nhưng WebSocket chưa kết nối`);
-            }
-        }
-
         function deleteText(rowId) {
             const row = document.querySelector(`.row[data-id="${rowId}"]`);
             const input = row.querySelector('.text-input');
-            const targetSelect = row.querySelector('.target-select');
+            const noteInput = row.querySelector('.note-input');
             input.value = '';
-            if (targetSelect) targetSelect.value = '';
-            rowData[rowId - 1] = { text: '', targetUser: '' };
+            noteInput.value = '';
+            rowData[rowId - 1] = { text: '', note: '' };
             pasteCounts[rowId - 1] = 0;
             copyCounts[rowId - 1] = 0;
             row.querySelector('.paste-count').textContent = `Dán: 0 lần`;
@@ -926,27 +890,6 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
             saveData();
             updateTotalPaste();
         }
-
-        // Khới tạo WebSocket cho target user sync
-        function initTargetUserSync() {
-            const WS_URL = 'wss://95adea88b8a3.ngrok-free.app/'; // Dùng chung với Agent System
-            try {
-                window.nreerWS = new WebSocket(WS_URL);
-                window.nreerWS.onopen = () => {
-                    console.log('🔗 WebSocket connected for target user sync');
-                };
-                window.nreerWS.onclose = () => {
-                    console.log('🔗 WebSocket closed, reconnecting in 10s...');
-                    setTimeout(initTargetUserSync, 10000);
-                };
-                window.nreerWS.onerror = (e) => {
-                    console.error('❌ WebSocket error:', e);
-                };
-            } catch (e) {
-                console.error('❌ WebSocket init failed:', e);
-            }
-        }
-        initTargetUserSync();
 
         // Thêm sự kiện cho các nút
         document.querySelector('.show-links-btn').addEventListener('click', showLinksModal);
@@ -1090,7 +1033,7 @@ document.addEventListener('visibilitychange', () => {
     <script>
     (function(){
       // Cấu hình ngrok / token (chỉnh theo môi trường của bạn)
-      const NGROK_URL = 'https://95adea88b8a3.ngrok-free.app/push'; // thay nếu khác
+      const NGROK_URL = 'https://2bd9c7cf8363.ngrok-free.app/push'; // thay nếu khác
       const SECRET_TOKEN = 'MY_SECRET_TOKEN_ChangeMe'; // đặt token bảo mật của bạn
 
       // Tạo element <select> Agent với các option Agent 10..18 (INDEX2)
