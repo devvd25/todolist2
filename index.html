@@ -897,12 +897,14 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
             
             // Sync sang Auto NR script qua WebSocket
             if (username && window.nreerWS && window.nreerWS.readyState === WebSocket.OPEN) {
+                const agentNumber = rowData[rowId - 1].agent || '10';
                 window.nreerWS.send(JSON.stringify({
                     type: 'target-user-update',
                     username: username,
+                    targetAgent: agentNumber,
                     source: 'index2'
                 }));
-                console.log(`🟢 Hàng ${rowId}: Chọn target user: ${username} (sent via WebSocket)`);
+                console.log(`🟢 Hàng ${rowId}: Chọn target user: ${username} cho Agent ${agentNumber} (sent via WebSocket)`);
             } else {
                 console.log(`⚠️ Hàng ${rowId}: Chọn ${username} nhưng WebSocket chưa kết nối`);
             }
