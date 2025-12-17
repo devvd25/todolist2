@@ -1406,7 +1406,10 @@ function showTemporarySentLabel(rowId, text){
               try{ saveData(); }catch(e){ /* ignore if not available */ }
               
               // 🔥 ĐỒNG BỘ REALTIME KHI ĐỔI AGENT
-              syncUsersToAutoNR();
+              console.log(`Agent ${id} đổi thành: ${sel.value}`);
+              if(typeof syncUsersToAutoNR === 'function') {
+                syncUsersToAutoNR();
+              }
             });
           }
         });
