@@ -920,15 +920,25 @@ document.addEventListener('visibilitychange', () => {
                 
                 // Đọc từ DOM (dropdown agent-select) thay vì rowData
                 const rows = document.querySelectorAll('.row');
-                rows.forEach(row => {
+                console.log('📊 Tìm thấy', rows.length, 'hàng để sync');
+                
+                rows.forEach((row, idx) => {
                     const agentSelect = row.querySelector('.agent-select');
                     const userInput = row.querySelector('.note-input');
+                    
+                    console.log(`Hàng ${idx+1}:`, {
+                        hasAgentSelect: !!agentSelect,
+                        hasUserInput: !!userInput,
+                        agent: agentSelect?.value,
+                        user: userInput?.value
+                    });
                     
                     if (agentSelect && userInput) {
                         const agent = agentSelect.value; // Lấy từ dropdown
                         const user = userInput.value.trim();
                         
-                        if (user.length > 0 && user.startsWith('@')) {
+                        // Sync cả user rỗng hoặc không có @ (sẽ lưu vào mapping)
+                        if (user.length > 0) {
                             agentUserMapping[agent] = user;
                             totalUsers++;
                         }
@@ -941,7 +951,9 @@ document.addEventListener('visibilitychange', () => {
                 console.log('🔄 SYNCED to Auto NR (1-1 mapping):', agentUserMapping);
                 
                 // Hiển thị thông báo
-                showSyncNotification(totalUsers);
+                if (totalUsers > 0) {
+                    showSyncNotification(totalUsers);
+                }
             } catch (e) {
                 console.error('❌ Sync error:', e);
             }
@@ -1001,8 +1013,11 @@ document.addEventListener('visibilitychange', () => {
         // Tải dữ liệu khi trang được mở
         window.addEventListener('load', () => {
             loadData();
-            // Sync users ngay khi load
-            setTimeout(syncUsersToAutoNR, 500);
+            // Sync users SAU KHI enhanceRows xong (1.5s để đảm bảo)
+            setTimeout(() => {
+                console.log('🔥 Bắt đầu sync sau khi trang load xong');
+                syncUsersToAutoNR();
+            }, 1500);
         });
 
         // ===== AUTO-SEND FUNCTIONS =====
