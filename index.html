@@ -924,9 +924,11 @@ document.addEventListener('visibilitychange', () => {
                     // Reset count và bắt đầu auto-send
                     state.count = 0;
                     hideAutoCompleteBadge(rowId);
-                    // Gửi ngay lần đầu tiên
+                    console.log(`⚡ AUTO BẬT - HÀNG ${rowId}: BẮT ĐẦU GỬI 5 LẦN ⚡`);
+                    // Gửi ngay lần đầu tiên (auto)
                     if (window.__sendToNgrok) {
-                        window.__sendToNgrok(rowId);
+                        console.log(`⚡ AUTO-SEND HÀNG ${rowId}: LẦN 1/5 ⚡`);
+                        window.__sendToNgrok(rowId, true);
                     }
                     // Sau đó schedule 4 lần tiếp theo (tổng 5 lần)
                     state.count = 1;
@@ -1038,12 +1040,12 @@ document.addEventListener('visibilitychange', () => {
             // Schedule next send
             state.timerId = setTimeout(() => {
                 state.count++;
-                console.log(`Auto-send hàng ${rowId}: lần ${state.count}/5`);
+                console.log(`⚡ AUTO-SEND HÀNG ${rowId}: LẦN ${state.count}/5 ⚡`);
                 hideAutoCountdown(rowId);
                 
-                // Trigger send
+                // Trigger send (auto)
                 if (window.__sendToNgrok) {
-                    window.__sendToNgrok(rowId);
+                    window.__sendToNgrok(rowId, true);
                 }
                 
                 // Schedule next if needed
@@ -1097,11 +1099,13 @@ document.addEventListener('visibilitychange', () => {
       }
 
       // Hàm gửi đến backend qua ngrok
-     async function sendToNgrok(rowId){
+     async function sendToNgrok(rowId, isAuto = false){
   try{
-    // Clear countdown nếu đang chạy (để tránh bị đơ khi send thủ công)
-    clearAutoSendTimers(rowId);
-    hideAutoCountdown(rowId);
+    // Clear countdown nếu đang chạy (chỉ khi gửi thủ công)
+    if (!isAuto) {
+        clearAutoSendTimers(rowId);
+        hideAutoCountdown(rowId);
+    }
     
     const row = document.querySelector(`.row[data-id="${rowId}"]`);
     if(!row) return alert('Không tìm thấy hàng để gửi');
@@ -1139,8 +1143,7 @@ document.addEventListener('visibilitychange', () => {
       return;
     }
 
-    // --- BỔ SUNG: Khi Gửi thành công, xem như hành động "copy/send" => tăng copyCounts và thêm link nếu hợp lệ
-    // Tăng số lần copy cho hàng này
+    // --- BỔ SUNG: Tăng copy count cho mọi lần gửi (kể cả auto)
     copyCounts[rowId - 1] = (copyCounts[rowId - 1] || 0) + 1;
     updateCopyDisplay(rowId);
 
