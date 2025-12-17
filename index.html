@@ -920,7 +920,17 @@ document.addEventListener('visibilitychange', () => {
             if (toggle) {
                 if (state.enabled) {
                     toggle.classList.add('active');
-                    toggle.title = 'Auto ON (sẽ gửi lại 4 lần sau mỗi 3 phút)';
+                    toggle.title = 'Auto ON (sẽ gửi 4 lần sau mỗi 3 phút)';
+                    // Reset count và bắt đầu auto-send
+                    state.count = 0;
+                    hideAutoCompleteBadge(rowId);
+                    // Gửi ngay lần đầu tiên
+                    if (window.__sendToNgrok) {
+                        window.__sendToNgrok(rowId);
+                    }
+                    // Sau đó schedule 3 lần tiếp theo
+                    state.count = 1;
+                    scheduleAutoSend(rowId);
                 } else {
                     toggle.classList.remove('active');
                     toggle.title = 'Auto OFF';
@@ -1152,7 +1162,7 @@ document.addEventListener('visibilitychange', () => {
      // THÊM ĐOẠN NÀY ĐỂ KHỞI ĐỘNG ĐỒNG HỒ KHI GỬI
         resetTimer(rowId);
         timers[rowId - 1] = {
-            timeLeft: 205, // 3 phút 25 giây
+            timeLeft: 220, // 3 phút 40 giây
             intervalId: null,
             waitingForFocus: true
         };
@@ -1160,12 +1170,6 @@ document.addEventListener('visibilitychange', () => {
         
         // Thay đổi trạng thái nút (Done)
         showTemporarySentLabel(rowId, `Đã gửi tới Agent ${agent}`);
-        
-        // Trigger auto-send nếu được bật
-        const autoState = autoSendState[rowId - 1];
-        if (autoState && autoState.enabled && autoState.count === 0) {
-            scheduleAutoSend(rowId);
-        }
     }catch(err){
         console.error('Lỗi khi gửi:', err);
         alert('Lỗi: ' + err.message);
