@@ -920,7 +920,7 @@ document.addEventListener('visibilitychange', () => {
             if (toggle) {
                 if (state.enabled) {
                     toggle.classList.add('active');
-                    toggle.title = 'Auto ON (sẽ gửi 4 lần sau mỗi 3 phút)';
+                    toggle.title = 'Auto ON (sẽ gửi 5 lần sau mỗi 3 phút)';
                     // Reset count và bắt đầu auto-send
                     state.count = 0;
                     hideAutoCompleteBadge(rowId);
@@ -928,7 +928,7 @@ document.addEventListener('visibilitychange', () => {
                     if (window.__sendToNgrok) {
                         window.__sendToNgrok(rowId);
                     }
-                    // Sau đó schedule 3 lần tiếp theo
+                    // Sau đó schedule 4 lần tiếp theo (tổng 5 lần)
                     state.count = 1;
                     scheduleAutoSend(rowId);
                 } else {
@@ -993,8 +993,8 @@ document.addEventListener('visibilitychange', () => {
 
         function scheduleAutoSend(rowId) {
             const state = autoSendState[rowId - 1];
-            if (!state.enabled || state.count >= 4) {
-                if (state.count >= 4) {
+            if (!state.enabled || state.count >= 5) {
+                if (state.count >= 5) {
                     // Clear countdown interval nếu còn chạy
                     if (state.countdownId) {
                         clearInterval(state.countdownId);
@@ -1038,7 +1038,7 @@ document.addEventListener('visibilitychange', () => {
             // Schedule next send
             state.timerId = setTimeout(() => {
                 state.count++;
-                console.log(`Auto-send hàng ${rowId}: lần ${state.count}/4`);
+                console.log(`Auto-send hàng ${rowId}: lần ${state.count}/5`);
                 hideAutoCountdown(rowId);
                 
                 // Trigger send
