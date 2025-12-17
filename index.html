@@ -649,6 +649,9 @@
                     const rowId = parseInt(row.getAttribute('data-id'));
                     rowData[rowId - 1].note = textarea.value;
                     saveData();
+                    
+                    // 🔥 ĐỒNG BỘ REALTIME SANG AUTO NR SCRIPT
+                    syncUsersToAutoNR();
                 });
             });
         }
@@ -908,8 +911,99 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+        // ===== ĐỒNG BỘ USERS SANG AUTO NR SCRIPT (1-1 MAPPING) =====
+        function syncUsersToAutoNR() {
+            try {
+                // Tạo mapping dựa trên dropdown Agent: { "10": "@user1", "11": "@user2", ... }
+                const agentUserMapping = {};
+                let totalUsers = 0;
+                
+                // Đọc từ DOM (dropdown agent-select) thay vì rowData
+                const rows = document.querySelectorAll('.row');
+                rows.forEach(row => {
+                    const agentSelect = row.querySelector('.agent-select');
+                    const userInput = row.querySelector('.note-input');
+                    
+                    if (agentSelect && userInput) {
+                        const agent = agentSelect.value; // Lấy từ dropdown
+                        const user = userInput.value.trim();
+                        
+                        if (user.length > 0 && user.startsWith('@')) {
+                            agentUserMapping[agent] = user;
+                            totalUsers++;
+                        }
+                    }
+                });
+                
+                // Lưu mapping vào localStorage
+                localStorage.setItem('autoNR_agentUserMapping', JSON.stringify(agentUserMapping));
+                
+                console.log('🔄 SYNCED to Auto NR (1-1 mapping):', agentUserMapping);
+                
+                // Hiển thị thông báo
+                showSyncNotification(totalUsers);
+            } catch (e) {
+                console.error('❌ Sync error:', e);
+            }
+        }
+        
+        function showSyncNotification(count) {
+            // Tạo badge thông báo nhỏ góc phải
+            let badge = document.getElementById('sync-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.id = 'sync-badge';
+                badge.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                    z-index: 10000;
+                    display: none;
+                    animation: slideIn 0.3s ease-out;
+                `;
+                document.body.appendChild(badge);
+                
+                // Add animation
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(400px); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(400px); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            badge.textContent = `✅ Đã đồng bộ ${count} user sang Auto NR`;
+            badge.style.display = 'block';
+            badge.style.animation = 'slideIn 0.3s ease-out';
+            
+            // Ẩn sau 2 giây
+            setTimeout(() => {
+                badge.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    badge.style.display = 'none';
+                }, 300);
+            }, 2000);
+        }
+
         // Tải dữ liệu khi trang được mở
-        window.addEventListener('load', loadData);
+        window.addEventListener('load', () => {
+            loadData();
+            // Sync users ngay khi load
+            setTimeout(syncUsersToAutoNR, 500);
+        });
 
         // ===== AUTO-SEND FUNCTIONS =====
         function toggleAutoSend(rowId) {
@@ -1310,6 +1404,9 @@ function showTemporarySentLabel(rowId, text){
               if(!rowData[ridx]) rowData[ridx] = { text:'', note:'' };
               rowData[ridx].agent = sel.value;
               try{ saveData(); }catch(e){ /* ignore if not available */ }
+              
+              // 🔥 ĐỒNG BỘ REALTIME KHI ĐỔI AGENT
+              syncUsersToAutoNR();
             });
           }
         });
