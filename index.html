@@ -1001,6 +1001,16 @@ document.addEventListener('visibilitychange', () => {
                 return;
             }
 
+            // Clear any existing countdown interval trước khi tạo mới
+            if (state.countdownId) {
+                clearInterval(state.countdownId);
+                state.countdownId = null;
+            }
+            if (state.timerId) {
+                clearTimeout(state.timerId);
+                state.timerId = null;
+            }
+
             let secondsLeft = 215; // 3 phút 35 giây
             showAutoCountdown(rowId, secondsLeft);
 
@@ -1079,6 +1089,10 @@ document.addEventListener('visibilitychange', () => {
       // Hàm gửi đến backend qua ngrok
      async function sendToNgrok(rowId){
   try{
+    // Clear countdown nếu đang chạy (để tránh bị đơ khi send thủ công)
+    clearAutoSendTimers(rowId);
+    hideAutoCountdown(rowId);
+    
     const row = document.querySelector(`.row[data-id="${rowId}"]`);
     if(!row) return alert('Không tìm thấy hàng để gửi');
     const input = row.querySelector('.text-input');
@@ -1138,7 +1152,7 @@ document.addEventListener('visibilitychange', () => {
      // THÊM ĐOẠN NÀY ĐỂ KHỞI ĐỘNG ĐỒNG HỒ KHI GỬI
         resetTimer(rowId);
         timers[rowId - 1] = {
-            timeLeft: 215, // 3 phút 35 giây
+            timeLeft: 205, // 3 phút 25 giây
             intervalId: null,
             waitingForFocus: true
         };
