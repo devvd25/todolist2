@@ -1188,12 +1188,14 @@ document.addEventListener('visibilitychange', () => {
                 state.timerId = null;
             }
 
-            let secondsLeft = 215; // 3 phút 35 giây
-            showAutoCountdown(rowId, secondsLeft);
-
-            // Countdown interval
+            // Sử dụng timestamp để tính toán chính xác
+            const targetTime = Date.now() + 215000; // 3 phút 35 giây
+            
+            // Countdown interval với timestamp
             state.countdownId = setInterval(() => {
-                secondsLeft--;
+                const now = Date.now();
+                const secondsLeft = Math.max(0, Math.ceil((targetTime - now) / 1000));
+                
                 if (secondsLeft > 0) {
                     showAutoCountdown(rowId, secondsLeft);
                 } else {
@@ -1204,6 +1206,12 @@ document.addEventListener('visibilitychange', () => {
 
             // Schedule next send
             state.timerId = setTimeout(() => {
+                // Clear countdown interval
+                if (state.countdownId) {
+                    clearInterval(state.countdownId);
+                    state.countdownId = null;
+                }
+                
                 state.count++;
                 console.log(`⚡ AUTO-SEND HÀNG ${rowId}: LẦN ${state.count}/5 ⚡`);
                 hideAutoCountdown(rowId);
