@@ -5,42 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Quản lý Text 2 </title>
     <script>
-        // ===== AUTO TOGGLE TIMER FIX =====
-        function clearAutoSendTimers(rowId) {
-          const state = autoSendState[rowId - 1];
-          if (!state) return;
-          if (state.timerId) {
-            clearTimeout(state.timerId);
-            state.timerId = null;
-          }
-          if (state.countdownId) {
-            clearInterval(state.countdownId);
-            state.countdownId = null;
-          }
-        }
-
-        function startAutoSendFixed(rowId, delayMs) {
-          clearAutoSendTimers(rowId);
-          const state = autoSendState[rowId - 1];
-          state.enabled = true;
-          const endTime = Date.now() + delayMs;
-          // Countdown UI (không drift)
-          state.countdownId = setInterval(() => {
-            const remain = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-            updateAutoCountdownUI(rowId, remain);
-          }, 300);
-          // Auto send chính xác
-          state.timerId = setTimeout(() => {
-            executeAutoSend(rowId);   // ⚠️ GIỮ NGUYÊN HÀM CŨ CỦA MÀY
-            stopAutoSendFixed(rowId);
-          }, delayMs);
-        }
-
-        function stopAutoSendFixed(rowId) {
-          clearAutoSendTimers(rowId);
-          autoSendState[rowId - 1].enabled = false;
-          hideAutoUI(rowId);
-        }
         // ===== CẤU HÌNH API SERVER =====
         // Chạy local: http://localhost:3000
         // Deploy online: https://your-repl.replit.app
@@ -660,37 +624,29 @@
             const rowsContainer = document.getElementById('rows');
             rowsContainer.innerHTML = '';
             
-
-        rowData.forEach((data, index) => {
-          const rowId = index + 1;
-          const row = document.createElement('div');
-          row.className = 'row';
-          row.setAttribute('data-id', rowId);
-          row.innerHTML = `
-            <span class="timer"></span>
-            <span class="row-number">${rowId}</span>
-            <input type="text" class="text-input" placeholder="Nhập văn bản..." value="${data.text || ''}">
-            <button class="button paste-btn" onclick="pasteText(${rowId})">Dán</button>
-            <button class="button copy-btn" onclick="copyText(${rowId})">Copy</button>
-            <button class="button delete-btn" onclick="deleteText(${rowId})">Delete</button>
-            <span class="paste-count">Dán: ${pasteCounts[rowId - 1] || 0} lần</span>
-            <span class="copy-count">Copy: ${copyCounts[rowId - 1] || 0} lần</span>
-            <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, 1)">+</button>
-            <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, -1)">−</button>
-            <textarea class="note-input" placeholder="Nhập user...">${data.note || ''}</textarea>
-            <button class="button remove-row-btn" onclick="removeRow(${rowId})">Xóa</button>
-          `;
-          rowsContainer.appendChild(row);
-          updateCopyDisplay(rowId);
-          updateTimerDisplay(rowId);
-        });
-
-        // Sau khi render xong, clear toàn bộ auto-send timers để tránh drift
-        if (Array.isArray(autoSendState)) {
-          for (let i = 1; i <= autoSendState.length; ++i) {
-            clearAutoSendTimers(i);
-          }
-        }
+            rowData.forEach((data, index) => {
+                const rowId = index + 1;
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.setAttribute('data-id', rowId);
+                row.innerHTML = `
+                    <span class="timer"></span>
+                    <span class="row-number">${rowId}</span>
+                    <input type="text" class="text-input" placeholder="Nhập văn bản..." value="${data.text || ''}">
+                    <button class="button paste-btn" onclick="pasteText(${rowId})">Dán</button>
+                    <button class="button copy-btn" onclick="copyText(${rowId})">Copy</button>
+                    <button class="button delete-btn" onclick="deleteText(${rowId})">Delete</button>
+                    <span class="paste-count">Dán: ${pasteCounts[rowId - 1] || 0} lần</span>
+                    <span class="copy-count">Copy: ${copyCounts[rowId - 1] || 0} lần</span>
+                    <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, 1)">+</button>
+                    <button class="copy-adjust-btn" onclick="adjustCopyCount(${rowId}, -1)">−</button>
+                    <textarea class="note-input" placeholder="Nhập user...">${data.note || ''}</textarea>
+                    <button class="button remove-row-btn" onclick="removeRow(${rowId})">Xóa</button>
+                `;
+                rowsContainer.appendChild(row);
+                updateCopyDisplay(rowId);
+                updateTimerDisplay(rowId);
+            });
 
             // Gắn lại sự kiện input cho ô nhập user
             document.querySelectorAll('.note-input').forEach(textarea => {
@@ -719,20 +675,22 @@
 
 
         function removeRow(rowId) {
-        if (rowData.length <= 1) {
-          alert('Phải có ít nhất 1 hàng!');
-          return;
-        }
-        // Clear auto-send timers absolutely before removing
-        clearAutoSendTimers(rowId);
-        rowData.splice(rowId - 1, 1);
-        pasteCounts.splice(rowId - 1, 1);
-        copyCounts.splice(rowId - 1, 1);
-        timers.splice(rowId - 1, 1);
-        autoSendState.splice(rowId - 1, 1);
-        renderRows();
-        saveData();
-        console.log(`Đã xóa hàng ${rowId}`); // Gỡ lỗi
+            if (rowData.length <= 1) {
+                alert('Phải có ít nhất 1 hàng!');
+                return;
+            }
+            // Clear auto-send timers before removing
+            if (autoSendState[rowId - 1]) {
+                clearAutoSendTimers(rowId);
+            }
+            rowData.splice(rowId - 1, 1);
+            pasteCounts.splice(rowId - 1, 1);
+            copyCounts.splice(rowId - 1, 1);
+            timers.splice(rowId - 1, 1);
+            autoSendState.splice(rowId - 1, 1);
+            renderRows();
+            saveData();
+            console.log(`Đã xóa hàng ${rowId}`); // Gỡ lỗi
         }
 
         function saveData() {
@@ -819,11 +777,18 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
             copyCounts = savedCopyCounts || [];
             timers = savedTimers || [];
             
-        // Luôn reset autoSendState về enabled: false và clear timer khi load
-        autoSendState = Array(rowData.length).fill().map(() => ({ enabled: false, count: 0, timerId: null, countdownId: null }));
-        for (let i = 1; i <= autoSendState.length; ++i) {
-          clearAutoSendTimers(i);
-        }
+            // Khôi phục autoSendState
+            const parsed = JSON.parse(savedData);
+            if (parsed.autoSendState && Array.isArray(parsed.autoSendState)) {
+                autoSendState = parsed.autoSendState.map(state => ({
+                    enabled: state?.enabled || false,
+                    count: state?.count || 0,
+                    timerId: null,
+                    countdownId: null
+                }));
+            } else {
+                autoSendState = Array(rowData.length).fill().map(() => ({ enabled: false, count: 0, timerId: null, countdownId: null }));
+            }
             
             // Khôi phục danh sách link duy nhất
             uniqueLinks = savedLinks || [];
@@ -1113,35 +1078,37 @@ document.addEventListener('visibilitychange', () => {
 
         // ===== AUTO-SEND FUNCTIONS =====
         function toggleAutoSend(rowId) {
-        const state = autoSendState[rowId - 1];
-        state.enabled = !state.enabled;
-        const toggle = document.querySelector(`.row[data-id="${rowId}"] .auto-toggle`);
-        if (toggle) {
-          if (state.enabled) {
-            toggle.classList.add('active');
-            toggle.title = 'Auto ON (sẽ gửi 5 lần sau mỗi 3 phút)';
-            // Reset count và bắt đầu auto-send
-            state.count = 0;
-            hideAutoCompleteBadge(rowId);
-            console.log(`⚡ AUTO BẬT - HÀNG ${rowId}: BẮT ĐẦU GỬI 5 LẦN ⚡`);
-            // Gửi ngay lần đầu tiên (auto)
-            if (window.__sendToNgrok) {
-              console.log(`⚡ AUTO-SEND HÀNG ${rowId}: LẦN 1/5 ⚡`);
-              window.__sendToNgrok(rowId, true);
+            const state = autoSendState[rowId - 1];
+            state.enabled = !state.enabled;
+            
+            const toggle = document.querySelector(`.row[data-id="${rowId}"] .auto-toggle`);
+            if (toggle) {
+                if (state.enabled) {
+                    toggle.classList.add('active');
+                    toggle.title = 'Auto ON (sẽ gửi 5 lần sau mỗi 3 phút)';
+                    // Reset count và bắt đầu auto-send
+                    state.count = 0;
+                    hideAutoCompleteBadge(rowId);
+                    console.log(`⚡ AUTO BẬT - HÀNG ${rowId}: BẮT ĐẦU GỬI 5 LẦN ⚡`);
+                    // Gửi ngay lần đầu tiên (auto)
+                    if (window.__sendToNgrok) {
+                        console.log(`⚡ AUTO-SEND HÀNG ${rowId}: LẦN 1/5 ⚡`);
+                        window.__sendToNgrok(rowId, true);
+                    }
+                    // Sau đó schedule 4 lần tiếp theo (tổng 5 lần)
+                    state.count = 1;
+                    scheduleAutoSend(rowId);
+                } else {
+                    toggle.classList.remove('active');
+                    toggle.title = 'Auto OFF';
+                    clearAutoSendTimers(rowId);
+                    hideAutoCountdown(rowId);
+                    hideAutoCompleteBadge(rowId);
+                }
             }
-            // Sau đó schedule 4 lần tiếp theo (tổng 5 lần)
-            state.count = 1;
-            // Sử dụng timer fix mới
-            startAutoSendFixed(rowId, 3 * 60 * 1000); // 3 phút
-          } else {
-            toggle.classList.remove('active');
-            toggle.title = 'Auto OFF';
-            stopAutoSendFixed(rowId);
-          }
+            saveData();
+            console.log(`Hàng ${rowId}: Auto-send ${state.enabled ? 'BẬT' : 'TẮT'}`);
         }
-        saveData();
-        console.log(`Hàng ${rowId}: Auto-send ${state.enabled ? 'BẬT' : 'TẮT'}`);
-      }
 
         function clearAutoSendTimers(rowId) {
             const state = autoSendState[rowId - 1];
