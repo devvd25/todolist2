@@ -1,39 +1,3 @@
-// ===== AUTO TOGGLE TIMER FIX =====
-function clearAutoSendTimers(rowId) {
-  const state = autoSendState[rowId - 1];
-  if (!state) return;
-  if (state.timerId) {
-    clearTimeout(state.timerId);
-    state.timerId = null;
-  }
-  if (state.countdownId) {
-    clearInterval(state.countdownId);
-    state.countdownId = null;
-  }
-}
-
-function startAutoSendFixed(rowId, delayMs) {
-  clearAutoSendTimers(rowId);
-  const state = autoSendState[rowId - 1];
-  state.enabled = true;
-  const endTime = Date.now() + delayMs;
-  // Countdown UI (không drift)
-  state.countdownId = setInterval(() => {
-    const remain = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-    updateAutoCountdownUI(rowId, remain);
-  }, 300);
-  // Auto send chính xác
-  state.timerId = setTimeout(() => {
-    executeAutoSend(rowId);   // ⚠️ GIỮ NGUYÊN HÀM CŨ CỦA MÀY
-    stopAutoSendFixed(rowId);
-  }, delayMs);
-}
-
-function stopAutoSendFixed(rowId) {
-  clearAutoSendTimers(rowId);
-  autoSendState[rowId - 1].enabled = false;
-  hideAutoUI(rowId);
-}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -41,6 +5,42 @@ function stopAutoSendFixed(rowId) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Quản lý Text 2 </title>
     <script>
+        // ===== AUTO TOGGLE TIMER FIX =====
+        function clearAutoSendTimers(rowId) {
+          const state = autoSendState[rowId - 1];
+          if (!state) return;
+          if (state.timerId) {
+            clearTimeout(state.timerId);
+            state.timerId = null;
+          }
+          if (state.countdownId) {
+            clearInterval(state.countdownId);
+            state.countdownId = null;
+          }
+        }
+
+        function startAutoSendFixed(rowId, delayMs) {
+          clearAutoSendTimers(rowId);
+          const state = autoSendState[rowId - 1];
+          state.enabled = true;
+          const endTime = Date.now() + delayMs;
+          // Countdown UI (không drift)
+          state.countdownId = setInterval(() => {
+            const remain = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+            updateAutoCountdownUI(rowId, remain);
+          }, 300);
+          // Auto send chính xác
+          state.timerId = setTimeout(() => {
+            executeAutoSend(rowId);   // ⚠️ GIỮ NGUYÊN HÀM CŨ CỦA MÀY
+            stopAutoSendFixed(rowId);
+          }, delayMs);
+        }
+
+        function stopAutoSendFixed(rowId) {
+          clearAutoSendTimers(rowId);
+          autoSendState[rowId - 1].enabled = false;
+          hideAutoUI(rowId);
+        }
         // ===== CẤU HÌNH API SERVER =====
         // Chạy local: http://localhost:3000
         // Deploy online: https://your-repl.replit.app
