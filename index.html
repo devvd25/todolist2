@@ -1465,11 +1465,13 @@ function showTemporarySentLabel(rowId, text){
           }
 
           // Thêm select agent nếu chưa có (chèn trước textarea.note-input)
-          if(!r.querySelector('.agent-select')){
+          const ridx = id - 1;
+          const savedAgent = (rowData[ridx] && rowData[ridx].agent) ? rowData[ridx].agent : '10';
+          
+          let sel = r.querySelector('.agent-select');
+          if(!sel){
             const note = r.querySelector('.note-input');
-            const ridx = id - 1;
-            const savedAgent = (rowData[ridx] && rowData[ridx].agent) ? rowData[ridx].agent : '10';
-            const sel = createAgentSelect(savedAgent);
+            sel = createAgentSelect(savedAgent);
 
             if(note){
               note.parentNode.insertBefore(sel, note);
@@ -1490,6 +1492,11 @@ function showTemporarySentLabel(rowId, text){
                 syncUsersToAutoNR();
               }
             });
+          } else {
+            // Cập nhật giá trị dropdown từ rowData nếu khác
+            if(sel.value !== savedAgent) {
+              sel.value = savedAgent;
+            }
           }
         });
       }
