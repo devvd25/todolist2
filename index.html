@@ -817,7 +817,7 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
         // Thiết lập đồng hồ đếm ngược
         resetTimer(rowId);
         timers[rowId - 1] = {
-            timeLeft: 215, // 3 phút 35 giây
+            timeLeft: 205, // 3 phút 25 giây
             intervalId: null,
             waitingForFocus: true
         };
@@ -862,7 +862,7 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
             // Thiết lập đồng hồ đếm ngược
             resetTimer(rowId);
             timers[rowId - 1] = {
-                timeLeft: 215, // 3 phút 35 giây
+                timeLeft: 205, // 3 phút 25 giây
                 intervalId: null,
                 waitingForFocus: true
             };
@@ -1189,7 +1189,7 @@ document.addEventListener('visibilitychange', () => {
             }
 
             // Sử dụng timestamp để tính toán chính xác
-            const targetTime = Date.now() + 215000; // 3 phút 35 giây
+            const targetTime = Date.now() + 205000; // 3 phút 25 giây
             
             // Countdown interval với timestamp
             state.countdownId = setInterval(() => {
@@ -1223,7 +1223,7 @@ document.addEventListener('visibilitychange', () => {
                 
                 // Schedule next if needed
                 scheduleAutoSend(rowId);
-            }, 215000); // 3 phút 35 giây = 215000ms
+            }, 205000); // 3 phút 25 giây = 205000ms
         }
     </script>
 
@@ -1338,7 +1338,7 @@ document.addEventListener('visibilitychange', () => {
      // THÊM ĐOẠN NÀY ĐỂ KHỞI ĐỘNG ĐỒNG HỒ KHI GỬI
         resetTimer(rowId);
         timers[rowId - 1] = {
-            timeLeft: 220, // 3 phút 40 giây
+            timeLeft: 205, // 3 phút 25 giây
             intervalId: null,
             waitingForFocus: true
         };
