@@ -683,6 +683,7 @@
             if (autoSendState[rowId - 1]) {
                 clearAutoSendTimers(rowId);
             }
+            // XÓA HOÀN TOÀN HÀng - reset tất cả kể cả agent
             rowData.splice(rowId - 1, 1);
             pasteCounts.splice(rowId - 1, 1);
             copyCounts.splice(rowId - 1, 1);
@@ -690,7 +691,8 @@
             autoSendState.splice(rowId - 1, 1);
             renderRows();
             saveData();
-            console.log(`Đã xóa hàng ${rowId}`); // Gỡ lỗi
+            syncUsersToAutoNR(); // Đồng bộ lại sau khi xóa hàng
+            console.log(`Đã xóa HOÀN TOÀN hàng ${rowId} (reset agent)`); // Gỡ lỗi
         }
 
         function saveData() {
@@ -889,13 +891,15 @@ if (Array.isArray(JSON.parse(savedData).agentInputs)) {
             const noteInput = row.querySelector('.note-input');
             input.value = '';
             noteInput.value = '';
-            rowData[rowId - 1] = { text: '', note: '' };
+            // GIỮ LẠI AGENT - chỉ xóa text và note
+            const currentAgent = rowData[rowId - 1]?.agent || '10';
+            rowData[rowId - 1] = { text: '', note: '', agent: currentAgent };
             pasteCounts[rowId - 1] = 0;
             copyCounts[rowId - 1] = 0;
             row.querySelector('.paste-count').textContent = `Dán: 0 lần`;
             resetTimer(rowId);
             updateCopyDisplay(rowId);
-            console.log(`Hàng ${rowId}: Đã xóa lớp highlight, nội dung và đặt lại số lần copy`); // Gỡ lỗi
+            console.log(`Hàng ${rowId}: Đã xóa nội dung nhưng GIỮ NGUYÊN agent ${currentAgent}`); // Gỡ lỗi
             saveData();
             updateTotalPaste();
         }
